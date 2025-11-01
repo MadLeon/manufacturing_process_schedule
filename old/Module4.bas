@@ -1,37 +1,39 @@
 Attribute VB_Name = "Module4"
 Sub RemoveShippedItems()
-Attribute RemoveShippedItems.VB_Description = "This Macro will remove jobs that have already shipped."
-Attribute RemoveShippedItems.VB_ProcData.VB_Invoke_Func = " \n14"
-Application.ScreenUpdating = False
-Dim iListCount As Integer
-Dim iCtr As Integer
-'
-' Shipped Macro
-' This Macro will remove jobs that have already shipped.
-'
+    Attribute RemoveShippedItems.VB_Description = "This Macro will remove jobs that have already shipped."
+    Attribute RemoveShippedItems.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.ScreenUpdating = False  ' 关闭屏幕刷新，提高速度
+    Dim iListCount As Integer           ' 用于记录数据行数的变量
+    Dim iCtr As Integer                 ' 用于循环计数
 
-'
+    '
+    ' Shipped Macro
+    ' 该宏用于移除已经发货的任务
+    '
+
+    ' 激活生产排程文件
     Windows("Manufacturing process Schedule.xlsm").Activate
     Sheets("Shipped").Select
-    Columns("A").EntireColumn.Delete
-   
+    Columns("A").EntireColumn.Delete        ' 删除A列（清理旧数据）
+
+    ' 打开订单日志文件，复制交付计划
     Workbooks.Open ("\\bvserver\oe\order entry log.xlsm")
     Windows("Order Entry Log.xlsm").Activate
     Sheets("DELIVERY SCHEDULE").Select
     Range("B4:B1000").Select
     Selection.Copy
+
+    ' 回到生产排程，粘贴交付计划到Shipped表
     Windows("Manufacturing process Schedule.xlsm").Activate
     Sheets("Shipped").Select
     Range("A1").Select
     Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
         :=False, Transpose:=False
-    'Rows("1:3").Select
-   ' Application.CutCopyMode = False
-    'Selection.Delete Shift:=xlUp
-    Range("A1").Select
-    
+
+    ' 删除Shipped表中A列的所有空行
     Columns("a").SpecialCells(xlCellTypeBlanks).EntireRow.Delete
-      
+
+    ' 复制delivery schedule tracking表的H列到List表的A列
     Sheets("delivery schedule tracking").Select
     Range("h3:h1000").Select
     Selection.Copy
@@ -39,60 +41,43 @@ Dim iCtr As Integer
     Range("A1").Select
     Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
         :=False, Transpose:=False
- ' Turn off screen updating to speed up macro.
-' Application.ScreenUpdating = False
 
-' Get count of records to search through (list that will be deleted).
-iListCount = Sheets("List").Cells(Rows.Count, "A").End(xlUp).Row
+    ' 获取List表实际数据行数
+    iListCount = Sheets("List").Cells(Rows.Count, "A").End(xlUp).Row
 
-' Loop through the "master" list.
-For Each x In Sheets("Shipped").Range("A1:A" & Sheets("shipped").Cells(Rows.Count, "A").End(xlUp).Row)
-   ' Loop through all records in the second list.
-   For iCtr = iListCount To 1 Step -1
-      ' Do comparison of next record.
-      ' To specify a different column, change 1 to the column number.
-      If x.Value = Sheets("List").Cells(iCtr, 1).Value Then
-         ' If match is true then delete row.
-         Sheets("List").Cells(iCtr, 1).EntireRow.Delete
-       End If
-   Next iCtr
-Next
+    ' 从Shipped表A列，逐项与List表A列做比对，若相同则删除List表相应行
+    For Each x In Sheets("Shipped").Range("A1:A" & Sheets("shipped").Cells(Rows.Count, "A").End(xlUp).Row)
+        For iCtr = iListCount To 1 Step -1
+            If x.Value = Sheets("List").Cells(iCtr, 1).Value Then
+                Sheets("List").Cells(iCtr, 1).EntireRow.Delete
+            End If
+        Next iCtr
+    Next
 
+    ' 再次获取delivery schedule tracking表的H列数据行数
+    iListCount = Sheets("DELIVERY SCHEDULE TRACKING").Cells(Rows.Count, "H").End(xlUp).Row
 
+    ' 从List表A列，逐项与delivery schedule tracking表H列比对，若相同则删除delivery schedule tracking对应行
+    For Each x In Sheets("list").Range("A1:A" & Sheets("list").Cells(Rows.Count, "A").End(xlUp).Row)
+        For iCtr = iListCount To 3 Step -1
+            If x.Value = Sheets("DELIVERY SCHEDULE TRACKING").Cells(iCtr, 8).Value Then
+                Sheets("DELIVERY SCHEDULE TRACKING").Cells(iCtr, 1).EntireRow.Delete
+            End If
+        Next iCtr
+    Next
 
-' Turn off screen updating to speed up macro.
-' Application.ScreenUpdating = False
+    ' 关闭Order Entry Log文件，不保存更改
+    Windows("Order Entry Log.xlsm").Activate
+    Workbooks("order entry log.xlsm").Close SaveChanges:=False
 
-' Get count of records to search through (list that will be deleted).
-iListCount = Sheets("DELIVERY SCHEDULE TRACKING").Cells(Rows.Count, "H").End(xlUp).Row
+    ' 选中delivery schedule tracking表中H列最后有数据的单元格
+    Sheets("DELIVERY SCHEDULE TRACKING").Select
+    Range("H1500").End(xlUp).Select
 
-' Loop through the "master" list.
-For Each x In Sheets("list").Range("A1:A" & Sheets("list").Cells(Rows.Count, "A").End(xlUp).Row)
-   ' Loop through all records in the second list.
-   For iCtr = iListCount To 3 Step -1
-      ' Do comparison of next record.
-      ' To specify a different column, change 1 to the column number.
-      If x.Value = Sheets("DELIVERY SCHEDULE TRACKING").Cells(iCtr, 8).Value Then
-         ' If match is true then delete row.
-         Sheets("DELIVERY SCHEDULE TRACKING").Cells(iCtr, 1).EntireRow.Delete
-       End If
-   Next iCtr
-Next
+    Application.ScreenUpdating = True  ' 重新开启屏幕刷新
+    MsgBox "SHIPPED ITEM REMOVAL COMPLETED"  ' 操作完成弹窗
 
-
-Windows("Order Entry Log.xlsm").Activate
-Workbooks("order entry log.xlsm").Close SaveChanges:=False
- 
- 
- 
-Sheets("DELIVERY SCHEDULE TRACKING").Select
-Range("H1500").End(xlUp).Select
-
-Application.ScreenUpdating = True
-MsgBox "SHIPPED ITEM REMOVAL COMPLETED"
-
-'Application.ScreenUpdating = True
-'MsgBox "Done!"
+    'Application.ScreenUpdating = True
+    'MsgBox "Done!"
 
 End Sub
-

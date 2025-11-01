@@ -1,18 +1,20 @@
 Attribute VB_Name = "Module11"
 Sub MoveData()
-    Application.ScreenUpdating = False
+    Application.ScreenUpdating = False ' 关闭屏幕刷新，加快宏运行速度
     Dim i As Range
     Dim num As Integer
     num = 1
-    'Find the very last used cell  in a Column:
-'Application.ScreenUpdating = False
-On Error Resume Next
-'Filter to show ALL
-ActiveSheet.ShowAllData
 
-Range("JOB#").Sort Key1:=Range("h1"), Order1:=xlDescending
+    ' 捕获异常，防止ShowAllData报错（如没筛选时）
+    On Error Resume Next
 
-' autoFilter Macro
+    ' 取消所有筛选
+    ActiveSheet.ShowAllData
+
+    ' 按 H1 列降序排序，“JOB#”为命名区域
+    Range("JOB#").Sort Key1:=Range("h1"), Order1:=xlDescending
+
+    ' 多列自动筛选
     ActiveSheet.Range("$B$2:$N$1500").AutoFilter Field:=1
     ActiveSheet.Range("$B$2:$N$1500").AutoFilter Field:=2
     ActiveSheet.Range("$B$2:$N$1500").AutoFilter Field:=3
@@ -22,11 +24,11 @@ Range("JOB#").Sort Key1:=Range("h1"), Order1:=xlDescending
     ActiveSheet.Range("$B$2:$N$1500").AutoFilter Field:=7
     ActiveSheet.Range("$B$2:$N$1500").AutoFilter Field:=8
     ActiveSheet.Range("$B$2:$N$1500").AutoFilter Field:=13
-    ActiveWorkbook.Worksheets("DELIVERY SCHEDULE TRACKING").AutoFilter.Sort. _
-        SortFields.Clear
-    ActiveWorkbook.Worksheets("DELIVERY SCHEDULE TRACKING").AutoFilter.Sort. _
-        SortFields.Add Key:=Range("H2:H1500"), SortOn:=xlSortOnValues, Order:= _
-        xlAscending, DataOption:=xlSortNormal
+
+    ' 对“DELIVERY SCHEDULE TRACKING”表的H列升序排序
+    ActiveWorkbook.Worksheets("DELIVERY SCHEDULE TRACKING").AutoFilter.Sort.SortFields.Clear
+    ActiveWorkbook.Worksheets("DELIVERY SCHEDULE TRACKING").AutoFilter.Sort.SortFields.Add _
+        Key:=Range("H2:H1500"), SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
     With ActiveWorkbook.Worksheets("DELIVERY SCHEDULE TRACKING").AutoFilter.Sort
         .Header = xlYes
         .MatchCase = False
@@ -35,134 +37,121 @@ Range("JOB#").Sort Key1:=Range("h1"), Order1:=xlDescending
         .Apply
     End With
 
-Workbooks("Manufacturing Process Schedule.xlsm").Activate
-Sheets("DELIVERY SCHEDULE TRACKING").Select
-Range("H1500").End(xlUp).Select
-ActiveCell.Copy
-Sheets("Cal").Select
-Range("A1").PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks:= _
-        False, Transpose:=True
-   
+    ' 将DELIVERY SCHEDULE TRACKING中最末H列的内容复制到Cal表的A1
+    Workbooks("Manufacturing Process Schedule.xlsm").Activate
+    Sheets("DELIVERY SCHEDULE TRACKING").Select
+    Range("H1500").End(xlUp).Select
+    ActiveCell.Copy
+    Sheets("Cal").Select
+    Range("A1").PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks:=False, Transpose:=True
+
+    ' 获取Cal表A1的值，作为比较目标
     tgtVal = (Workbooks("Manufacturing Process Schedule.xlsm").Sheets("Cal").Range("a1"))
 
-    
+    ' 打开order entry log，切换至Delivery Schedule
     Workbooks.Open ("\\RTDNAS2\oe\order entry log.xlsm")
     Workbooks("Order Entry Log.xlsm").Activate
     Sheets("Delivery Schedule").Activate
-    
-    On Error Resume Next
-    'Filter to show ALL
-    ActiveSheet.ShowAllData
-    
-    For Each i In Range("B4:B1500")
-        'If i.Value > 55449 Then
-        If i.Value > (tgtVal) Then
 
+    On Error Resume Next
+    ' 取消所有筛选
+    ActiveSheet.ShowAllData
+
+    ' 循环遍历B4:B1500区域，筛选大于tgtVal（最新交期）的行复制到Manufacturing Process Schedule.xlsm的Temp工作表末尾
+    For Each i In Range("B4:B1500")
+        If i.Value > (tgtVal) Then
             i.Select
             ActiveCell.Rows("1:1").EntireRow.Select
             Selection.Copy
             Workbooks("Manufacturing Process Schedule.xlsm").Activate
             Sheets("Temp").Range("a250").End(xlUp).Offset(num, 0).PasteSpecial
-            'ActiveCell.Rows.Delete
             num = num + 1
             Workbooks("Order Entry Log.xlsm").Activate
             Sheets("Delivery Schedule").Activate
-
-
         End If
     Next i
-    
-        Workbooks("Manufacturing Process Schedule.xlsm").Activate
-            Sheets("Temp").Activate
 
-On Error Resume Next
-Columns("a").SpecialCells(xlCellTypeBlanks).EntireRow.Delete
+    ' 切换到Temp表，删除空行和多余列
+    Workbooks("Manufacturing Process Schedule.xlsm").Activate
+    Sheets("Temp").Activate
 
-Columns("m:o").EntireColumn.Delete
-Columns("n:p").EntireColumn.Delete
-Columns("g").EntireColumn.Delete
-Columns("h").EntireColumn.Delete
-Columns("i").EntireColumn.Delete
+    On Error Resume Next
+    Columns("a").SpecialCells(xlCellTypeBlanks).EntireRow.Delete
+    Columns("m:o").EntireColumn.Delete
+    Columns("n:p").EntireColumn.Delete
+    Columns("g").EntireColumn.Delete
+    Columns("h").EntireColumn.Delete
+    Columns("i").EntireColumn.Delete
 
-' Move PO to Col B
+    ' 按新需求调整各列顺序
+    ' PO移到B列
     Columns("I:I").Select
     Selection.Cut
     Columns("B:B").Select
     Selection.Insert Shift:=xlToRight
-
-' Move DWG Rel to Col C
+    ' DWG Rel移到C列
     Columns("H:H").Select
     Selection.Cut
     Columns("C:C").Select
     Selection.Insert Shift:=xlToRight
-' Move Pasrt# to Col D
+    ' Part#移到D列
     Columns("G:G").Select
     Selection.Cut
     Columns("D:D").Select
     Selection.Insert Shift:=xlToRight
-    
-' Move Description to Col E
+    ' Description移到E列
     Columns("I:I").Select
     Selection.Cut
     Columns("E:E").Select
     Selection.Insert Shift:=xlToRight
-
-' Move Customer to Col F
+    ' Customer移到F列
     Columns("G:G").Select
     Selection.Cut
     Columns("F:F").Select
     Selection.Insert Shift:=xlToRight
-    
-' Move QTY to Col G
+    ' QTY移到G列
     Columns("H:H").Select
     Selection.Cut
     Columns("G:G").Select
     Selection.Insert Shift:=xlToRight
-
-' Move Job# to Col H (no need)
-    
-' Move  Due Date to Col I
+    ' Due Date移到I列
     Columns("J:J").Select
     Selection.Cut
     Columns("I:I").Select
     Selection.Insert Shift:=xlToRight
-'Delete Col "J" to finalize
-Columns("J").EntireColumn.Delete
+    ' 删除原始J列
+    Columns("J").EntireColumn.Delete
 
-    
-Workbooks("Manufacturing Process Schedule.xlsm").Activate
-Sheets("temp").Select
-Range("A1").End(xlDown).Select
-'Range(ActiveCell, ActiveCell.End(xlUp)).Select
-ActiveCell.CurrentRegion.Select
-ActiveCell.CurrentRegion.Copy
+    ' 复制Temp当前有效区域到delivery schedule tracking表A2末尾
+    Workbooks("Manufacturing Process Schedule.xlsm").Activate
+    Sheets("temp").Select
+    Range("A1").End(xlDown).Select
+    ActiveCell.CurrentRegion.Select
+    ActiveCell.CurrentRegion.Copy
 
-Workbooks("Manufacturing Process Schedule.xlsm").Activate
-Sheets("delivery schedule tracking").Select
-Range("A2").End(xlDown).Select
-ActiveCell.Offset(1, 0).Select
-ActiveCell.PasteSpecial xlPasteValues
+    Workbooks("Manufacturing Process Schedule.xlsm").Activate
+    Sheets("delivery schedule tracking").Select
+    Range("A2").End(xlDown).Select
+    ActiveCell.Offset(1, 0).Select
+    ActiveCell.PasteSpecial xlPasteValues
 
-Workbooks("Manufacturing Process Schedule.xlsm").Activate
-Sheets("temp").Select
-Range("A1").End(xlDown).Select
-'Range(ActiveCell, ActiveCell.End(xlUp)).Select
-ActiveCell.CurrentRegion.Select
-ActiveCell.CurrentRegion.ClearContents
+    ' 清空Temp表内容
+    Workbooks("Manufacturing Process Schedule.xlsm").Activate
+    Sheets("temp").Select
+    Range("A1").End(xlDown).Select
+    ActiveCell.CurrentRegion.Select
+    ActiveCell.CurrentRegion.ClearContents
 
-Workbooks("Manufacturing Process Schedule.xlsm").Activate
-Sheets("delivery schedule tracking").Select
-Range("A2").End(xlDown).Select
+    Workbooks("Manufacturing Process Schedule.xlsm").Activate
+    Sheets("delivery schedule tracking").Select
+    Range("A2").End(xlDown).Select
 
-' Shipped Macro
-' This Macro will remove jobs that have already shipped.
-'
-
-'
+    ' ---------- 移除已发货任务 ----------
+    ' 复制Order Entry Log里的DELIVERY SCHEDULE到Shipped
     Windows("Manufacturing process Schedule.xlsm").Activate
     Sheets("Shipped").Select
     Columns("A").EntireColumn.Delete
-   
+
     Windows("Order Entry Log.xlsm").Activate
     Sheets("DELIVERY SCHEDULE").Select
     Range("B4:B1500").Select
@@ -170,104 +159,46 @@ Range("A2").End(xlDown).Select
     Windows("Manufacturing process Schedule.xlsm").Activate
     Sheets("Shipped").Select
     Range("A1").Select
-    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
-        :=False, Transpose:=False
-    'Rows("1:3").Select
-   ' Application.CutCopyMode = False
-    'Selection.Delete Shift:=xlUp
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks:=False, Transpose:=False
+
     Range("A1").Select
-    
     Columns("a").SpecialCells(xlCellTypeBlanks).EntireRow.Delete
-      
+
+    ' 将delivery schedule tracking的H列复制到List表A列
     Sheets("delivery schedule tracking").Select
     Range("h3:h500").Select
     Selection.Copy
     Sheets("List").Select
     Range("A1").Select
-    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks _
-        :=False, Transpose:=False
-        
-          
-        
+    Selection.PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks:=False, Transpose:=False
+
+    ' 删除List表中与Shipped重复项
     Dim iListCount As Integer
     Dim iCtr As Integer
+    iListCount = Sheets("List").Cells(Rows.Count, "A").End(xlUp).Row
+    For Each x In Sheets("Shipped").Range("A1:A" & Sheets("shipped").Cells(Rows.Count, "A").End(xlUp).Row)
+        For iCtr = iListCount To 1 Step -1
+            If x.Value = Sheets("List").Cells(iCtr, 1).Value Then
+                Sheets("List").Cells(iCtr, 1).EntireRow.Delete
+            End If
+        Next iCtr
+    Next
 
-' Turn off screen updating to speed up macro.
-' Application.ScreenUpdating = False
+    Sheets("DELIVERY SCHEDULE TRACKING").Select
+    Range("H1500").End(xlUp).Select
 
-' Get count of records to search through (list that will be deleted).
-iListCount = Sheets("List").Cells(Rows.Count, "A").End(xlUp).Row
+    ' 删除delivery schedule tracking中与List重复项
+    iListCount = Sheets("DELIVERY SCHEDULE TRACKING").Cells(Rows.Count, "H").End(xlUp).Row
+    For Each x In Sheets("list").Range("A1:A" & Sheets("list").Cells(Rows.Count, "A").End(xlUp).Row)
+        For iCtr = iListCount To 3 Step -1
+            If x.Value = Sheets("DELIVERY SCHEDULE TRACKING").Cells(iCtr, 8).Value Then
+                Sheets("DELIVERY SCHEDULE TRACKING").Cells(iCtr, 1).EntireRow.Delete
+            End If
+        Next iCtr
+    Next
 
-' Loop through the "master" list.
-For Each x In Sheets("Shipped").Range("A1:A" & Sheets("shipped").Cells(Rows.Count, "A").End(xlUp).Row)
-   ' Loop through all records in the second list.
-   For iCtr = iListCount To 1 Step -1
-      ' Do comparison of next record.
-      ' To specify a different column, change 1 to the column number.
-      If x.Value = Sheets("List").Cells(iCtr, 1).Value Then
-         ' If match is true then delete row.
-         Sheets("List").Cells(iCtr, 1).EntireRow.Delete
-       End If
-   Next iCtr
-Next
-'Application.ScreenUpdating = True
-'MsgBox "Done!"
-
-
-Sheets("DELIVERY SCHEDULE TRACKING").Select
-Range("H1500").End(xlUp).Select
-
-'MsgBox "DATA UPDATE COMPLETED"
-
-'Sub RemoveShippedItems()
-'Dim iListCount As Integer
-'Dim iCtr As Integer
-
-' Turn off screen updating to speed up macro.
-' Application.ScreenUpdating = False
-
-' Get count of records to search through (list that will be deleted).
-iListCount = Sheets("DELIVERY SCHEDULE TRACKING").Cells(Rows.Count, "H").End(xlUp).Row
-
-' Loop through the "master" list.
-For Each x In Sheets("list").Range("A1:A" & Sheets("list").Cells(Rows.Count, "A").End(xlUp).Row)
-   ' Loop through all records in the second list.
-   For iCtr = iListCount To 3 Step -1
-      ' Do comparison of next record.
-      ' To specify a different column, change 1 to the column number.
-      If x.Value = Sheets("DELIVERY SCHEDULE TRACKING").Cells(iCtr, 8).Value Then
-         ' If match is true then delete row.
-         Sheets("DELIVERY SCHEDULE TRACKING").Cells(iCtr, 1).EntireRow.Delete
-       End If
-   Next iCtr
-Next
-
-'copy original Due Date to the Act. DUE
-'Range("I3:I500").Copy
- '   Range("J3").PasteSpecial
-  '  Application.CutCopyMode = False
-   ' Range("I500").End(xlUp).Select
-    
-    
- 'define i as the range will be used
- '   Dim t As Long
-    'find last cell in the column
-  '  Range("J500").End(xlUp).Select
-    'find the cell number of row
-   ' d = ActiveCell.Row
-    'loop too check the value of each cell from row 1 to activecell
-   ' For t = 3 To d
-        'if the date of each cell is earlier than today's date,then update
-    '    If Range("J" & t).Value < Range("K1").Value Then
-
-     '   Range("J" & t).Value = Range("K1").Value
-      '  End If
-   ' Next
-
-'End Sub
-
-
-Cells.Select
+    ' 为表格设定细线边框
+    Cells.Select
     Range("B1").Activate
     Selection.Borders(xlDiagonalDown).LineStyle = xlNone
     Selection.Borders(xlDiagonalUp).LineStyle = xlNone
@@ -308,14 +239,14 @@ Cells.Select
         .Weight = xlHairline
     End With
 
-Windows("Order Entry Log.xlsm").Activate
-Workbooks("order entry log.xlsm").Close SaveChanges:=False
+    ' 关闭Order Entry Log文件
+    Windows("Order Entry Log.xlsm").Activate
+    Workbooks("order entry log.xlsm").Close SaveChanges:=False
 
-
+    ' 定位到I列最后一个有内容的单元格
     Range("I500").End(xlUp).Select
 
-    Application.ScreenUpdating = True
-    MsgBox "DATA UPDATE COMPLETED"
+    Application.ScreenUpdating = True ' 恢复屏幕刷新
+    MsgBox "DATA UPDATE COMPLETED" ' 操作完成提示
 
 End Sub
-
