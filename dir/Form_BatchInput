@@ -88,6 +88,8 @@ Public Sub PrepareForm(ByVal numItems As Long)
     Set ButtonHandlers(1).Btn = btnOK
     Set ButtonHandlers(2) = New Handler_BatchInputCancelButton
     Set ButtonHandlers(2).Btn = btnCancel
+
+    Me.Controls("txtItem1").SetFocus
 End Sub
 
 ' ------- Random number button click event ---------
@@ -129,14 +131,29 @@ Private Sub GenRandomNumber_Click()
         possibleVals(i) = WorksheetFunction.Round(minVal + i * stepSize, decPlaces)
     Next i
 
+    ' --------- Begin: Handle leading zero style ---------
+    ' Check if either input starts with "0."
+    Dim showLeadingZero As Boolean
+    showLeadingZero = (Left(Trim(Me.UpperTolerance.Text), 2) = "0." Or Left(Trim(Me.LowerTolerance.Text), 2) = "0.")
+    ' --------- End: Handle leading zero style ---------
+
     ' Fill each dynamic textbox with a random value
     Dim idx As Long
     For idx = 1 To Data_SharedValues.ItemCount
         Randomize
         randIndex = Int((UBound(possibleVals) - LBound(possibleVals) + 1) * Rnd + LBound(possibleVals))
         resultVal = possibleVals(randIndex)
+        ' Format number to required decimal places
         If decPlaces > 0 Then
-            resultStr = WorksheetFunction.Text(resultVal, "0." & String(decPlaces, "0"))
+            resultStr = Format(resultVal, "0." & String(decPlaces, "0"))
+            ' Remove leading zero if user input does not start with "0."
+            If Not showLeadingZero And Abs(resultVal) < 1 And resultVal <> 0 Then
+                If Left(resultStr, 2) = "0." Then
+                    resultStr = Mid(resultStr, 2)
+                ElseIf Left(resultStr, 3) = "-0." Then
+                    resultStr = "-" & Mid(resultStr, 3)
+                End If
+            End If
         Else
             resultStr = CStr(resultVal)
         End If
@@ -147,23 +164,3 @@ Private Sub GenRandomNumber_Click()
 ValueError:
     MsgBox "One or both input values are not valid numbers!", vbExclamation, "Input Error"
 End Sub
-
-' ------- Helper: String to number -------
-Public Function ToNumber(val As Variant) As Double
-    If IsNumeric(val) Then
-        ToNumber = CDbl(val)
-    Else
-        ToNumber = 0
-    End If
-End Function
-
-' ------- Helper: Count decimal digits -------
-Public Function CountDecimalPlaces(val As Variant) As Long
-    Dim s As String
-    s = CStr(val)
-    If InStr(s, ".") > 0 Then
-        CountDecimalPlaces = Len(Split(s, ".")(1))
-    Else
-        CountDecimalPlaces = 0
-    End If
-End Function
