@@ -1,0 +1,169 @@
+' ------ UserForm: Form_BatchInput ------
+Option Explicit
+
+Private ButtonHandlers() As Object
+
+' ------- Core: Generate dynamic inputs -----
+Public Sub PrepareForm(ByVal numItems As Long)
+    ' Layout and sizing config
+    Dim colWidth As Long: colWidth = 120
+    Dim rowHeight As Long: rowHeight = 25
+    Dim formPadding As Long: formPadding = 50
+    Dim btnWidth As Long: btnWidth = 60
+    Dim btnHeight As Long: btnHeight = 20
+    Dim btnSpacing As Long: btnSpacing = 10
+    Dim componentTop As Long: componentTop = 24  ' Top Y of static controls
+    Dim textboxHeight As Long: textboxHeight = 24
+
+    ' Determine columns based on item count
+    Dim numCols As Long
+    Select Case numItems
+        Case 1 To 20: numCols = 2
+        Case 21 To 30: numCols = 3
+        Case 31 To 40: numCols = 4
+        Case Else: numCols = Int((numItems - 1) / 10) + 1
+    End Select
+
+    ' Remove previous dynamic controls
+    Dim ctl As Control
+    For Each ctl In Me.Controls
+        If Left(ctl.Name, 7) = "txtItem" Or Left(ctl.Name, 6) = "lblItem" Or _
+           ctl.Name = "btnOK" Or ctl.Name = "btnCancel" Then
+            Me.Controls.Remove ctl.Name
+        End If
+    Next ctl
+
+    ' Store item count
+    Data_SharedValues.ItemCount = numItems
+    ReDim Data_SharedValues.BatchValues(1 To numItems)
+
+    ' Calculate rows per column (ceil division)
+    Dim numRowsPerCol As Long
+    numRowsPerCol = (numItems + numCols - 1) \ numCols
+
+    ' Add dynamic txt/lbl controls below static area
+    Dim i As Long, currentCol As Long, currentRow As Long
+    Dim lbl As MSForms.Label, tb As MSForms.TextBox
+    For i = 1 To numItems
+        currentCol = (i - 1) \ numRowsPerCol
+        currentRow = (i - 1) Mod numRowsPerCol
+
+        Set lbl = Me.Controls.Add("Forms.Label.1", "lblItem" & i, True)
+        lbl.Caption = i & "."
+        lbl.Top = componentTop + textboxHeight + 8 + currentRow * rowHeight
+        lbl.Left = 10 + currentCol * colWidth
+        lbl.Width = 15
+
+        Set tb = Me.Controls.Add("Forms.TextBox.1", "txtItem" & i, True)
+        tb.Top = lbl.Top - 3
+        tb.Left = lbl.Left + lbl.Width + 3
+        tb.Width = 80
+        tb.Text = ""
+    Next i
+
+    ' Adjust form size (width/height)
+    Me.Width = 30 + numCols * colWidth
+    Dim lastRowTop As Long
+    lastRowTop = componentTop + textboxHeight + 8 + numRowsPerCol * rowHeight
+    Me.Height = lastRowTop + btnHeight + formPadding
+
+    ' Add OK/Cancel buttons at form bottom right
+    Dim btnOK As MSForms.CommandButton, btnCancel As MSForms.CommandButton
+    Set btnOK = Me.Controls.Add("Forms.CommandButton.1", "btnOK", True)
+    btnOK.Caption = "OK"
+    btnOK.Width = btnWidth
+    btnOK.Height = btnHeight
+    btnOK.Left = Me.Width - btnWidth * 2 - btnSpacing * 2 - 15
+    btnOK.Top = Me.Height - btnHeight - btnSpacing - 30
+
+    Set btnCancel = Me.Controls.Add("Forms.CommandButton.1", "btnCancel", True)
+    btnCancel.Caption = "Cancel"
+    btnCancel.Width = btnWidth
+    btnCancel.Height = btnHeight
+    btnCancel.Left = Me.Width - btnWidth - btnSpacing - 15
+    btnCancel.Top = btnOK.Top
+
+    ReDim ButtonHandlers(1 To 2)
+    Set ButtonHandlers(1) = New Handler_BatchInputOKButton
+    Set ButtonHandlers(1).Btn = btnOK
+    Set ButtonHandlers(2) = New Handler_BatchInputCancelButton
+    Set ButtonHandlers(2).Btn = btnCancel
+End Sub
+
+' ------- Random number button click event ---------
+Private Sub GenRandomNumber_Click()
+    ' Check if both textboxes have values
+    If Trim(Me.UpperTolerance.Text) = "" Or Trim(Me.LowerTolerance.Text) = "" Then
+        MsgBox "Please fill in both 'Upper Tolerance' and 'Lower Tolerance'!", vbExclamation, "Input Required"
+        Exit Sub
+    End If
+
+    Dim upperTol As Double, lowerTol As Double
+    On Error GoTo ValueError
+    upperTol = ToNumber(Me.UpperTolerance.Text)
+    lowerTol = ToNumber(Me.LowerTolerance.Text)
+    On Error GoTo 0
+
+    ' Get decimal places of input
+    Dim upperDp As Long, lowerDp As Long, decPlaces As Long
+    upperDp = CountDecimalPlaces(Me.UpperTolerance.Text)
+    lowerDp = CountDecimalPlaces(Me.LowerTolerance.Text)
+    decPlaces = IIf(upperDp > lowerDp, upperDp, lowerDp)
+
+    Dim minVal As Double, maxVal As Double, stepSize As Double
+    Dim numSteps As Long, i As Long, possibleVals() As Double
+    Dim resultVal As Double, randIndex As Long, resultStr As String
+
+    minVal = lowerTol
+    maxVal = upperTol
+    stepSize = 1 / (10 ^ decPlaces)
+    numSteps = Round((maxVal - minVal) / stepSize)
+    If numSteps < 0 Then
+        MsgBox "Upper Tolerance must be greater than Lower Tolerance.", vbExclamation, "Input Error"
+        Exit Sub
+    End If
+
+    ' Create all possible values within range
+    ReDim possibleVals(0 To numSteps)
+    For i = 0 To numSteps
+        possibleVals(i) = WorksheetFunction.Round(minVal + i * stepSize, decPlaces)
+    Next i
+
+    ' Fill each dynamic textbox with a random value
+    Dim idx As Long
+    For idx = 1 To Data_SharedValues.ItemCount
+        Randomize
+        randIndex = Int((UBound(possibleVals) - LBound(possibleVals) + 1) * Rnd + LBound(possibleVals))
+        resultVal = possibleVals(randIndex)
+        If decPlaces > 0 Then
+            resultStr = WorksheetFunction.Text(resultVal, "0." & String(decPlaces, "0"))
+        Else
+            resultStr = CStr(resultVal)
+        End If
+        Me.Controls("txtItem" & idx).Text = resultStr
+    Next idx
+    Exit Sub
+
+ValueError:
+    MsgBox "One or both input values are not valid numbers!", vbExclamation, "Input Error"
+End Sub
+
+' ------- Helper: String to number -------
+Public Function ToNumber(val As Variant) As Double
+    If IsNumeric(val) Then
+        ToNumber = CDbl(val)
+    Else
+        ToNumber = 0
+    End If
+End Function
+
+' ------- Helper: Count decimal digits -------
+Public Function CountDecimalPlaces(val As Variant) As Long
+    Dim s As String
+    s = CStr(val)
+    If InStr(s, ".") > 0 Then
+        CountDecimalPlaces = Len(Split(s, ".")(1))
+    Else
+        CountDecimalPlaces = 0
+    End If
+End Function
