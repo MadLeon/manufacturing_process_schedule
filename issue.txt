@@ -2,3 +2,5 @@
 移除shipped条目时, 如果下面包含part drawing, 应该连part drawing一起移除
 生成超链接功能
 问题: 从shipped移回的条目, oe entry也会移回吗, 如果oe entry没有移回, 这样在下次sync的时候该条目又会被移回shipped
+
+batch input: when generate random that from, say 5.22 to 5.23, it always return 5.22

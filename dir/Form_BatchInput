@@ -25,7 +25,7 @@ Public Sub PrepareForm(ByVal numItems As Long)
     End Select
 
     ' Remove previous dynamic controls
-    Dim ctl As Control
+    Dim ctl As control
     For Each ctl In Me.Controls
         If Left(ctl.Name, 7) = "txtItem" Or Left(ctl.Name, 6) = "lblItem" Or _
            ctl.Name = "btnOK" Or ctl.Name = "btnCancel" Then
@@ -94,73 +94,107 @@ End Sub
 
 ' ------- Random number button click event ---------
 Private Sub GenRandomNumber_Click()
-    ' Check if both textboxes have values
-    If Trim(Me.UpperTolerance.Text) = "" Or Trim(Me.LowerTolerance.Text) = "" Then
-        MsgBox "Please fill in both 'Upper Tolerance' and 'Lower Tolerance'!", vbExclamation, "Input Required"
-        Exit Sub
+    ' Check if both textboxes are empty
+    If Trim(Me.UpperTolerance.Text) = "" And Trim(Me.LowerTolerance.Text) = "" Then
+        Exit Sub ' Do nothing if both empty
     End If
 
-    Dim upperTol As Double, lowerTol As Double
-    On Error GoTo ValueError
-    upperTol = ToNumber(Me.UpperTolerance.Text)
-    lowerTol = ToNumber(Me.LowerTolerance.Text)
-    On Error GoTo 0
+    ' Check if ONLY one textbox has a value
+    Dim upperTol As Double, lowerTol As Double, decPlaces As Long, resultVal As Double
+    Dim upperDp As Long, lowerDp As Long
+    Dim minVal As Double, maxVal As Double, stepSize As Double, numSteps As Long, i As Long, randIndex As Long, resultStr As String
+    Dim possibleVals() As Double
+    If Trim(Me.UpperTolerance.Text) <> "" And Trim(Me.LowerTolerance.Text) = "" Then
+        ' Only upper tolerance has a value
+        On Error GoTo ValueError
+        upperTol = ToNumber(Me.UpperTolerance.Text)
+        lowerTol = upperTol ' Set lower = upper
+        minVal = upperTol
+        On Error GoTo 0
+    ElseIf Trim(Me.LowerTolerance.Text) <> "" And Trim(Me.UpperTolerance.Text) = "" Then
+        ' Only lower tolerance has a value
+        On Error GoTo ValueError
+        lowerTol = ToNumber(Me.LowerTolerance.Text)
+        upperTol = lowerTol  ' Set upper = lower
+        minVal = lowerTol
+        On Error GoTo 0
+    Else
+        ' Both have values, proceed as before
+        On Error GoTo ValueError
+        upperTol = ToNumber(Me.UpperTolerance.Text)
+        lowerTol = ToNumber(Me.LowerTolerance.Text)
+        On Error GoTo 0
+    End If
 
     ' Get decimal places of input
-    Dim upperDp As Long, lowerDp As Long, decPlaces As Long
     upperDp = CountDecimalPlaces(Me.UpperTolerance.Text)
     lowerDp = CountDecimalPlaces(Me.LowerTolerance.Text)
     decPlaces = IIf(upperDp > lowerDp, upperDp, lowerDp)
 
-    Dim minVal As Double, maxVal As Double, stepSize As Double
-    Dim numSteps As Long, i As Long, possibleVals() As Double
-    Dim resultVal As Double, randIndex As Long, resultStr As String
-
     minVal = lowerTol
     maxVal = upperTol
+    If maxVal = 0 Then
+        maxVal = 0.000001
+    End If
+
     stepSize = 1 / (10 ^ decPlaces)
     numSteps = Round((maxVal - minVal) / stepSize)
     If numSteps < 0 Then
-        MsgBox "Upper Tolerance must be greater than Lower Tolerance.", vbExclamation, "Input Error"
+        MsgBox "Upper Tolerance must be greater than or equal to Lower Tolerance.", vbExclamation, "Input Error"
         Exit Sub
+    End If
+    If numSteps = 0 Then
+        numSteps = 1
     End If
 
     ' Create all possible values within range
-    ReDim possibleVals(0 To numSteps)
-    For i = 0 To numSteps
+    ReDim possibleVals(0 To numSteps - 1)
+    For i = 0 To numSteps - 1
         possibleVals(i) = WorksheetFunction.Round(minVal + i * stepSize, decPlaces)
     Next i
-
-    ' --------- Begin: Handle leading zero style ---------
+     ' --------- Begin: Handle leading zero style ---------
     ' Check if either input starts with "0."
     Dim showLeadingZero As Boolean
     showLeadingZero = (Left(Trim(Me.UpperTolerance.Text), 2) = "0." Or Left(Trim(Me.LowerTolerance.Text), 2) = "0.")
     ' --------- End: Handle leading zero style ---------
-
-    ' Fill each dynamic textbox with a random value
+    ' Fill each dynamic textbox with a random value or with a single value
     Dim idx As Long
-    For idx = 1 To Data_SharedValues.ItemCount
-        Randomize
-        randIndex = Int((UBound(possibleVals) - LBound(possibleVals) + 1) * Rnd + LBound(possibleVals))
-        resultVal = possibleVals(randIndex)
-        ' Format number to required decimal places
-        If decPlaces > 0 Then
-            resultStr = Format(resultVal, "0." & String(decPlaces, "0"))
-            ' Remove leading zero if user input does not start with "0."
-            If Not showLeadingZero And Abs(resultVal) < 1 And resultVal <> 0 Then
-                If Left(resultStr, 2) = "0." Then
-                    resultStr = Mid(resultStr, 2)
-                ElseIf Left(resultStr, 3) = "-0." Then
-                    resultStr = "-" & Mid(resultStr, 3)
+    If (Trim(Me.UpperTolerance.Text) <> "" And Trim(Me.LowerTolerance.Text) = "") Or (Trim(Me.LowerTolerance.Text) <> "" And Trim(Me.UpperTolerance.Text) = "") Then
+            For idx = 1 To Data_SharedValues.ItemCount
+                If decPlaces > 0 Then
+                     If showLeadingZero Then
+                       resultStr = Format(minVal, "0." & String(decPlaces, "0"))
+                     Else
+                        resultStr = Format(minVal, "#." & String(decPlaces, "0"))
+                     End If
+                Else
+                    resultStr = CStr(minVal)
                 End If
+                Me.Controls("txtItem" & idx).Text = resultStr
+            Next idx
+    Else
+       For idx = 1 To Data_SharedValues.ItemCount
+            Randomize
+            randIndex = Int((UBound(possibleVals) - LBound(possibleVals) + 1) * Rnd + LBound(possibleVals))
+            resultVal = possibleVals(randIndex)
+             ' Format number to required decimal places
+            If decPlaces > 0 Then
+                resultStr = Format(resultVal, "0." & String(decPlaces, "0"))
+                 ' Remove leading zero if user input does not start with "0."
+                If Not showLeadingZero And Abs(resultVal) < 1 And resultVal <> 0 Then
+                    If Left(resultStr, 2) = "0." Then
+                        resultStr = Mid(resultStr, 2)
+                    ElseIf Left(resultStr, 3) = "-0." Then
+                        resultStr = "-" & Mid(resultStr, 3)
+                    End If
+                End If
+            Else
+                resultStr = CStr(resultVal)
             End If
-        Else
-            resultStr = CStr(resultVal)
-        End If
-        Me.Controls("txtItem" & idx).Text = resultStr
-    Next idx
+            Me.Controls("txtItem" & idx).Text = resultStr
+        Next idx
+    End If
     Exit Sub
-
 ValueError:
     MsgBox "One or both input values are not valid numbers!", vbExclamation, "Input Error"
 End Sub
