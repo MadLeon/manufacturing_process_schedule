@@ -1,6 +1,4 @@
-1. 新建的shipped文件没有标题行
-2. 建立history数据库
-3. 移除shipped条目时, 如果下面包含part drawing, 应该连part drawing一起移除
-4. 询问part drawing是否都是手动输入的
-5. 生成超链接功能
-6. 在shipped文件中的条目后面添加按钮, 点击可以让它回去
+建立history数据库
+移除shipped条目时, 如果下面包含part drawing, 应该连part drawing一起移除
+生成超链接功能
+问题: 从shipped移回的条目, oe entry也会移回吗, 如果oe entry没有移回, 这样在下次sync的时候该条目又会被移回shipped

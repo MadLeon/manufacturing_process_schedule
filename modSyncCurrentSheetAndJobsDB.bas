@@ -1,19 +1,19 @@
 Sub SyncCurrentSheetAndJobsDB()
     ' 本地 test.xlsm 根据 jobs.db 内容同步：
-    ' 1. 本地 Priority Sheet 有但数据库无的，移到shipped sheet
+    ' 1. 本地 Priority Sheet 有但数据库无的，移到shipped sheet，并增加下拉菜单操作
     ' 2. 数据库有但本地 Priority Sheet 无的，摘取部分字段添加到 Priority Sheet 末尾，并设置样式
 
     Dim dbPath As String, dbHandle As LongPtr, result As Long, stmtHandle As LongPtr
     Dim curBook As Workbook, curWS As Worksheet, shippedWS As Worksheet
     Dim lastRowCur As Long, shipLastRow As Long
     Dim dbDict As Object, curDict As Object
-    Dim selectSQL As String, r As Long, i As Integer, k As Variant
+    Dim selectSQL As String, r As Long, k As Variant
     Dim jobNum As String
 
     dbPath = ThisWorkbook.Path & "\jobs.db"
     Set curBook = ThisWorkbook
 
-    ' -- 获取/新建 Priority Sheet --
+    ' -------- 获取/新建 Priority Sheet --------
     On Error Resume Next
     Set curWS = curBook.Sheets("Priority Sheet")
     If curWS Is Nothing Then
@@ -25,12 +25,12 @@ Sub SyncCurrentSheetAndJobsDB()
 
     lastRowCur = curWS.Cells(curWS.Rows.Count, 1).End(-4162).Row
 
-    ' 设置G,H,I列表头（Ship Date, Memo, Status）
+    ' -------- 设置 G,H,I 列表头 --------
     curWS.Cells(1, 7).Value = "Ship Date"
     curWS.Cells(1, 8).Value = "Memo"
     curWS.Cells(1, 9).Value = "Status"
 
-    ' 1. 初始化DLL连接
+    ' -------- 1. 初始化DLL连接 --------
     result = SQLite3Initialize(ThisWorkbook.Path)
     If result <> 0 Then
         MsgBox "SQLite3初始化失败": Exit Sub
@@ -40,7 +40,7 @@ Sub SyncCurrentSheetAndJobsDB()
         MsgBox "无法打开数据库": Exit Sub
     End If
 
-    ' 2. 获取 jobs.db 全部Job_Number字典和数据明细集合
+    ' -------- 2. 获取 jobs.db 所有 Job_Number 记录 --------
     Set dbDict = CreateObject("Scripting.Dictionary")
     selectSQL = "SELECT Job_Number, PO_Number, Customer_Name, Part_Description, Part_Number, Job_Quantity, Delivery_Shipped_Date FROM jobs"
     result = SQLite3PrepareV2(dbHandle, selectSQL, stmtHandle)
@@ -62,7 +62,7 @@ Sub SyncCurrentSheetAndJobsDB()
         SQLite3Finalize stmtHandle
     End If
 
-    ' 3. 获取 Priority Sheet 所有 Job_Number 字典
+    ' -------- 3. 获取 Priority Sheet 的所有 Job_Number --------
     Set curDict = CreateObject("Scripting.Dictionary")
     For r = 2 To lastRowCur
         jobNum = Trim(curWS.Cells(r, 1).Value) 'JOB # 在第1列
@@ -71,16 +71,33 @@ Sub SyncCurrentSheetAndJobsDB()
         End If
     Next
 
-    ' 4. 获取/新建 shipped sheet
+    ' -------- 4. 获取/新建 shipped sheet，并设置表头与格式 --------
     On Error Resume Next
     Set shippedWS = curBook.Sheets("Shipped")
     If shippedWS Is Nothing Then
         Set shippedWS = curBook.Sheets.Add(After:=curBook.Sheets(curBook.Sheets.Count))
         shippedWS.Name = "Shipped"
+        ' 一次写入 A~I 表头
+        shippedWS.Range("A1:I1").Value = Array("JOB #", "PO #", "Customer", "Description", "Part #", "Qty.", "Ship Date", "Memo", "Status")
+        ' 设置表头样式
+        With shippedWS.Range(shippedWS.Cells(1, 1), shippedWS.Cells(1, 10))  ' 包含J列
+            .Interior.Color = RGB(255, 199, 206) ' 淡粉色
+            .Font.Bold = True
+            .Font.Size = 16
+            .Font.Name = "Cambria"
+            .HorizontalAlignment = xlCenter
+            With .Borders
+                .LineStyle = xlContinuous
+                .Color = vbBlack
+                .Weight = xlThin
+            End With
+        End With
+        shippedWS.Range(shippedWS.Cells(1, 1), shippedWS.Cells(1, 10)).EntireColumn.AutoFit
     End If
     On Error GoTo 0
 
-    ' 5. 移动 Priority Sheet 中有但数据库无的到 Shipped
+    ' -------- 5. 移动 Priority Sheet 有但数据库无的条目至 Shipped，并添加下拉菜单 --------
+    Dim movedCount As Long: movedCount = 0
     For r = lastRowCur To 2 Step -1
         jobNum = Trim(curWS.Cells(r, 1).Value)
         If jobNum <> "" Then
@@ -88,19 +105,39 @@ Sub SyncCurrentSheetAndJobsDB()
                 shipLastRow = shippedWS.Cells(shippedWS.Rows.Count, 1).End(-4162).Row + 1
                 curWS.Rows(r).Copy shippedWS.Rows(shipLastRow)
                 curWS.Rows(r).Delete
+                movedCount = movedCount + 1
+                ' ----------- 在 J 列插入下拉菜单 (数据验证) -----------
+                With shippedWS.Cells(shipLastRow, 10).Validation
+                    .Delete
+                    .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, _
+                         Formula1:="Return,Delete"  ' 下拉选项
+                    .IgnoreBlank = True
+                    .InCellDropdown = True
+                    .ShowInput = True
+                    .ShowError = True
+                End With
+                shippedWS.Cells(shipLastRow, 10).Value = ""  ' 默认空
             End If
         End If
     Next
 
-    ' 6. Priority Sheet 末尾查找
+    ' -------- 6. 只有发生了数据移动才触发列宽自动调整 --------
+    If movedCount > 0 Then
+        Dim shippedLastRow As Long
+        Dim shippedUsedRng As Range
+        shippedLastRow = shippedWS.Cells(shippedWS.Rows.Count, 1).End(-4162).Row
+        Set shippedUsedRng = shippedWS.Range(shippedWS.Cells(1, 1), shippedWS.Cells(shippedLastRow, 10)) ' 包含J列
+        shippedUsedRng.Columns.AutoFit
+    End If
+
+    ' -------- 7. 查找Priority Sheet 当前末行 --------
     lastRowCur = curWS.Cells(curWS.Rows.Count, 1).End(-4162).Row
     If lastRowCur < 2 Then lastRowCur = 1
 
-    ' 7. 数据库有但本地 Priority Sheet 无的，添加到 Priority Sheet 末尾，并设置橙色与边框
+    ' -------- 8. 数据库有但本地 Priority Sheet 无的，添加到 Priority Sheet 末尾，并设置橙色与边框 --------
     For Each k In dbDict.Keys
         If Not curDict.Exists(k) Then
             lastRowCur = lastRowCur + 1
-            ' 只填A~F以及G[Ship Date]
             curWS.Cells(lastRowCur, 1).Value = dbDict(k)(0) 'JOB #
             curWS.Cells(lastRowCur, 2).Value = dbDict(k)(1) 'PO #
             curWS.Cells(lastRowCur, 3).Value = dbDict(k)(2) 'Customer
@@ -108,7 +145,7 @@ Sub SyncCurrentSheetAndJobsDB()
             curWS.Cells(lastRowCur, 5).Value = dbDict(k)(4) 'Part #
             curWS.Cells(lastRowCur, 6).Value = dbDict(k)(5) 'Qty.
             curWS.Cells(lastRowCur, 7).Value = dbDict(k)(6) 'Ship Date
-            ' H, I列留空
+            ' H, I 列空
 
             ' 设置A-G列橙色（255,199,44），加粗外内全部边框
             Dim rg As Range
@@ -134,9 +171,9 @@ Sub SyncCurrentSheetAndJobsDB()
         End If
     Next
 
+    ' -------- 9. 关闭数据库 --------
     SQLite3Close dbHandle
     SQLite3Free
 
     Debug.Print "本地文件与数据库同步已完成"
 End Sub
-
