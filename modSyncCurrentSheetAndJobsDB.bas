@@ -145,12 +145,13 @@ Sub SyncCurrentSheetAndJobsDB()
 
     Debug.Print "本地文件与数据库同步已完成"
 End Sub
+
 '统计零部件方法：
 Function CountParts(ws As Worksheet, startRow As Long) As Long
     Dim r As Long
     Dim lastRow As Long
     CountParts = 0
-    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row + 1
     If startRow >= lastRow Then Exit Function
 
     r = startRow + 1
@@ -159,4 +160,6 @@ Function CountParts(ws As Worksheet, startRow As Long) As Long
         CountParts = CountParts + 1
         r = r + 1
     Loop
+
+    Debug.Print "CountParts: Found " & CountParts & " parts for Job at row " & startRow
 End Function
