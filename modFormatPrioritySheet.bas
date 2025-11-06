@@ -1,3 +1,4 @@
+' modFormatPrioritySheet.bas
 Sub FormatPrioritySheet()
     Dim ws As Worksheet
     On Error Resume Next
@@ -8,7 +9,7 @@ Sub FormatPrioritySheet()
     On Error GoTo 0
 
     Dim usedRng As Range, lastRow As Long, lastCol As Long
-    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row + 1
     lastCol = 9 ' 只处理前9列
 
     Set usedRng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
@@ -24,7 +25,7 @@ Sub FormatPrioritySheet()
     ' 3. 列宽自动（类似双击列头右边）
     usedRng.Columns.AutoFit
 
-    ' 4. 标题行设置与边框
+    ' 4. 标题行设置
     With ws.Range(ws.Cells(1, 1), ws.Cells(1, lastCol))
         .Interior.Color = RGB(255, 199, 206) ' 淡粉色
         .Font.Bold = True
@@ -54,6 +55,13 @@ Sub FormatPrioritySheet()
 
     ' 6. 前9列加排序下拉按钮（自动筛选）
     ws.Range(ws.Cells(1, 1), ws.Cells(1, lastCol)).AutoFilter
+
+    ' 7. 设置数据区域 A1:G 列边框
+    With ws.Range(ws.Cells(2, 1), ws.Cells(lastRow, 7)).Borders
+        .LineStyle = xlContinuous
+        .Color = vbBlack
+        .Weight = xlThin
+    End With
 
     Debug.Print "Priority Sheet格式设置完成!"
 End Sub

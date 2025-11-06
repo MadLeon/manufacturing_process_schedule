@@ -94,6 +94,63 @@ End Sub
 
 ' ------- Random number button click event ---------
 Private Sub GenRandomNumber_Click()
+    ' 检查文本框是否有值
+    If Trim(Me.UpperTolerance.Text) = "" And Trim(Me.LowerTolerance.Text) = "" Then
+        Exit Sub ' 啥也没填就啥也不干
+    End If
+
+    ' 确保至少填写了一个值
+    Dim upperTol As Double, lowerTol As Double, decPlaces As Long, resultVal As Double
+    Dim upperDp As Long, lowerDp As Long, resultStr As String
+
+    On Error GoTo ValueError
+    If Trim(Me.UpperTolerance.Text) = "" Then
+        ' 只填写了Lower
+        lowerTol = ToNumber(Me.LowerTolerance.Text)
+        upperTol = lowerTol
+    ElseIf Trim(Me.LowerTolerance.Text) = "" Then
+        ' 只填写了Upper
+        upperTol = ToNumber(Me.UpperTolerance.Text)
+        lowerTol = upperTol
+    Else
+        ' 两者都填了
+        upperTol = ToNumber(Me.UpperTolerance.Text)
+        lowerTol = ToNumber(Me.LowerTolerance.Text)
+    End If
+    On Error GoTo 0
+
+    ' 获取小数位数
+    upperDp = CountDecimalPlaces(Me.UpperTolerance.Text)
+    lowerDp = CountDecimalPlaces(Me.LowerTolerance.Text)
+    decPlaces = IIf(upperDp > lowerDp, upperDp, lowerDp)
+
+    ' 检查是否有效
+    If upperTol < lowerTol Then
+        MsgBox "Upper Tolerance 必须大于或等于 Lower Tolerance。", vbExclamation, "输入错误"
+        Exit Sub
+    End If
+    If upperTol = lowerTol Then
+        '上下限相同，直接用下限值
+        resultVal = lowerTol
+    Else
+        ' 计算随机数
+        resultVal = lowerTol + (upperTol - lowerTol) * Rnd
+    End If
+
+    ' 格式化
+    resultStr = Format(resultVal, "0." & String(decPlaces, "0"))  ' 用 Format 确保精度
+    ' 填充到每个文本框
+    Dim idx As Long
+    For idx = 1 To Data_SharedValues.ItemCount
+        Me.Controls("txtItem" & idx).Text = resultStr
+    Next idx
+    Exit Sub
+
+ValueError:
+    MsgBox "输入数值无效！", vbExclamation, "输入错误"
+End Sub
+
+"Private Sub GenRandomNumber_Click()
     ' Check if both textboxes are empty
     If Trim(Me.UpperTolerance.Text) = "" And Trim(Me.LowerTolerance.Text) = "" Then
         Exit Sub ' Do nothing if both empty
@@ -197,4 +254,4 @@ Private Sub GenRandomNumber_Click()
     Exit Sub
 ValueError:
     MsgBox "One or both input values are not valid numbers!", vbExclamation, "Input Error"
-End Sub
+End Sub"
