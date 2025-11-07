@@ -102,8 +102,20 @@ Sub SyncCurrentSheetAndJobsDB()
                 Dim totalRowsToMove As Long
                 totalRowsToMove = 1 + partsCount
 
+                ' 获取 Shipped 表的最后一行
+                Dim shippedLastRowD As Long, shippedLastRowE As Long
+                shippedLastRowD = shippedWS.Cells(shippedWS.Rows.Count, "D").End(xlUp).Row
+                shippedLastRowE = shippedWS.Cells(shippedWS.Rows.Count, "E").End(xlUp).Row
+
+                ' 以较大者为准
+                Dim shipLastRow As Long
+                If shippedLastRowD >= shippedLastRowE Then
+                    shipLastRow = shippedLastRowD + 1
+                Else
+                    shipLastRow = shippedLastRowE + 1
+                End If
+
                 ' 移动
-                shipLastRow = shippedWS.Cells(shippedWS.Rows.Count, 1).End(-4162).Row + 1
                 curWS.Rows(r).Resize(totalRowsToMove).Copy shippedWS.Rows(shipLastRow)
 
                 ' 删除
@@ -149,17 +161,40 @@ End Sub
 '统计零部件方法：
 Function CountParts(ws As Worksheet, startRow As Long) As Long
     Dim r As Long
-    Dim lastRow As Long
+    Dim lastRowD As Long, lastRowE As Long
+    
     CountParts = 0
-    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row + 1
-    If startRow >= lastRow Then Exit Function
 
-    r = startRow + 1
+    ' 获取D列和E列的最后一行数据行
+    lastRowD = ws.Cells(ws.Rows.Count, "D").End(xlUp).Row
+    lastRowE = ws.Cells(ws.Rows.Count, "E").End(xlUp).Row
+
+    ' 取较大者作为基准
+    Dim lastRow As Long
+    If lastRowD >= lastRowE Then
+        lastRow = lastRowD
+    Else
+        lastRow = lastRowE
+    End If
+
+    Debug.Print "CountParts: startRow = " & startRow & ", lastRowD = " & lastRowD & ", lastRowE = " & lastRowE
+
+    If startRow >= lastRow Then
+      lastRow = startRow +1 
+    End If
+
+    r = startRow + 1 ' 从下一行开始
+
     Do While r <= lastRow
-        If Trim(ws.Cells(r, 1).Value) <> "" Then Exit Do ' 遇到下一个 Job,退出
+        If Trim(ws.Cells(r, 1).Value) <> "" Then
+            Debug.Print "CountParts: 在第 " & r & " 行遇到下一个Job，Part信息结束"
+            Exit Do ' 遇到下一个 Job,退出
+        End If
+        
         CountParts = CountParts + 1
-        r = r + 1
+        r = r + 1 ' 移动到下一行
     Loop
 
     Debug.Print "CountParts: Found " & CountParts & " parts for Job at row " & startRow
+    CountParts = CountParts
 End Function
