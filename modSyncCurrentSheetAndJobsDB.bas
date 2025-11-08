@@ -13,22 +13,21 @@ Sub SyncCurrentSheetAndJobsDB()
     dbPath = ThisWorkbook.Path & "\jobs.db"
     Set curBook = ThisWorkbook
     
-    ' 获取Priority Sheet
+    ' 获取/新建 Priority Sheet 并设置表头
     On Error Resume Next
     Set curWS = curBook.Sheets("Priority Sheet")
     If curWS Is Nothing Then
         Set curWS = curBook.Sheets.Add(After:=curBook.Sheets(curBook.Sheets.Count))
         curWS.Name = "Priority Sheet"
-        curWS.Range("A1:F1").Value = Array("JOB #", "PO #", "Customer", "Description", "Part #", "Qty.")
     End If
     On Error GoTo 0
 
-    lastRowCur = curWS.Cells(curWS.Rows.Count, 1).End(-4162).Row
+    ' 设置表头 A1:I1
+    With curWS
+        .Range("A1:I1").Value = Array("JOB #", "PO #", "Customer", "Description", "Part #", "Qty.", "Ship Date", "Memo", "Status")
+    End With
 
-    ' 设置列头
-    curWS.Cells(1, 7).Value = "Ship Date"
-    curWS.Cells(1, 8).Value = "Memo"
-    curWS.Cells(1, 9).Value = "Status"
+    lastRowCur = GetLastDataRow(curWS)
 
     ' 1. 初始化DLL
     result = SQLite3Initialize(ThisWorkbook.Path)
@@ -42,13 +41,20 @@ Sub SyncCurrentSheetAndJobsDB()
 
     ' 2. 获取数据库Job Number清单
     Set dbDict = CreateObject("Scripting.Dictionary")
-    selectSQL = "SELECT Job_Number FROM jobs"
+    selectSQL = "SELECT Job_Number, PO_Number, Customer_Name, Part_Number, Job_Quantity, Delivery_Required_Date FROM jobs"
     result = SQLite3PrepareV2(dbHandle, selectSQL, stmtHandle)
     If result = 0 Then
         Do While SQLite3Step(stmtHandle) = 100
             jobNum = Trim(SQLite3ColumnText(stmtHandle, 0))
             If jobNum <> "" Then
-                dbDict(jobNum) = 1 ' 仅需key
+                Dim jobData(5) As Variant
+                jobData(0) = SQLite3ColumnText(stmtHandle, 0) ' Job_Number
+                jobData(1) = SQLite3ColumnText(stmtHandle, 1) ' PO_Number
+                jobData(2) = SQLite3ColumnText(stmtHandle, 2) ' Customer_Name
+                jobData(3) = SQLite3ColumnText(stmtHandle, 3) ' Part_Number
+                jobData(4) = SQLite3ColumnText(stmtHandle, 4) ' Job_Quantity
+                jobData(5) = SQLite3ColumnText(stmtHandle, 5) ' Delivery_Required_Date
+                dbDict(jobNum) = jobData
             End If
         Loop
         SQLite3Finalize stmtHandle
@@ -103,17 +109,7 @@ Sub SyncCurrentSheetAndJobsDB()
                 totalRowsToMove = 1 + partsCount
 
                 ' 获取 Shipped 表的最后一行
-                Dim shippedLastRowD As Long, shippedLastRowE As Long
-                shippedLastRowD = shippedWS.Cells(shippedWS.Rows.Count, "D").End(xlUp).Row
-                shippedLastRowE = shippedWS.Cells(shippedWS.Rows.Count, "E").End(xlUp).Row
-
-                ' 以较大者为准
-                Dim shipLastRow As Long
-                If shippedLastRowD >= shippedLastRowE Then
-                    shipLastRow = shippedLastRowD + 1
-                Else
-                    shipLastRow = shippedLastRowE + 1
-                End If
+                Dim shipLastRow As Long: shipLastRow = GetLastDataRow(shippedWS) + 1
 
                 ' 移动
                 curWS.Rows(r).Resize(totalRowsToMove).Copy shippedWS.Rows(shipLastRow)
@@ -123,14 +119,15 @@ Sub SyncCurrentSheetAndJobsDB()
 
                 ' 更新行数
                 movedCount = movedCount + totalRowsToMove
-                lastRowCur = curWS.Cells(curWS.Rows.Count, 1).End(-4162).Row
+                lastRowCur = GetLastDataRow(curWS)
+                ' LastRowCur = shippedLastRow
 
                 ' !!!!! 重要: 同步 r 的值, 避免跳过行 !!!!!
                 r = r - 1 ' 因为删除了, 本行要重新检查
                 If r < 2 Then r = 2 ' 防止r小于表头
 
              Else
-                 r = r+1 '跳到下个job开始位置
+                 r = r + 1 '跳到下个job开始位置
             End If
              
         End If
@@ -138,7 +135,7 @@ Sub SyncCurrentSheetAndJobsDB()
          r = r + 1
         If r > lastRowCur Then Exit Do
     Loop
-     Debug.Print "总共移动 " & movedCount & " 行"
+    Debug.Print "总共移动 " & movedCount & " 行"
 
     ' -------- 7. 只有发生了数据移动才触发列宽自动调整 --------
     If movedCount > 0 Then
@@ -148,6 +145,40 @@ Sub SyncCurrentSheetAndJobsDB()
         Set shippedUsedRng = shippedWS.Range(shippedWS.Cells(1, 1), shippedWS.Cells(shippedLastRow, 10)) ' 包含J列
         shippedUsedRng.Columns.AutoFit
     End If
+
+    ' -------- 8. 数据库有但本地 Priority Sheet 无的条目，添加至 Priority Sheet，同时插入空行、并设置格式  --------
+    Dim rg As Range
+    For Each k In dbDict.Keys
+        If Not curDict.Exists(k) Then
+            ' 在 Priority Sheet 追加记录
+            lastRowCur = lastRowCur + 1
+
+            ' 从数据库提取内容，并按字段添加新数据
+            With curWS
+                .Cells(lastRowCur, 1).Value = dbDict(k)(0) 'JOB #
+                .Cells(lastRowCur, 2).Value = dbDict(k)(1) 'PO #
+                .Cells(lastRowCur, 3).Value = dbDict(k)(2) 'Customer
+                .Cells(lastRowCur, 5).Value = dbDict(k)(3) 'Part #
+                .Cells(lastRowCur, 6).Value = dbDict(k)(4) 'Qty.
+                .Cells(lastRowCur, 7).Value = dbDict(k)(5) 'Ship Date
+            End With
+
+            ' 设置数据行区域：A-G列，设为橙色
+            Set rg = curWS.Range(curWS.Cells(lastRowCur, 1), curWS.Cells(lastRowCur, 7))
+            With rg
+                .Interior.Color = RGB(255, 199, 44) ' 橙色
+            End With
+
+            ' 设置灰色背景 for 空行
+            lastRowCur = lastRowCur + 1
+            
+            Set rg = curWS.Range(curWS.Cells(lastRowCur, 1), curWS.Cells(lastRowCur, 7))
+            With rg
+                .Interior.Color = RGB(242, 242, 242) ' 淡灰色
+            End With
+
+        End If
+    Next
 
     ' -------- 9. 完成清理工作 --------
     SQLite3Close dbHandle
@@ -180,7 +211,7 @@ Function CountParts(ws As Worksheet, startRow As Long) As Long
     Debug.Print "CountParts: startRow = " & startRow & ", lastRowD = " & lastRowD & ", lastRowE = " & lastRowE
 
     If startRow >= lastRow Then
-      lastRow = startRow +1 
+      lastRow = startRow + 1
     End If
 
     r = startRow + 1 ' 从下一行开始
@@ -198,3 +229,36 @@ Function CountParts(ws As Worksheet, startRow As Long) As Long
     Debug.Print "CountParts: Found " & CountParts & " parts for Job at row " & startRow
     CountParts = CountParts
 End Function
+
+Function GetLastDataRow(ws As Worksheet) As Long
+  ' 获取 Priority Sheet 数据的最后一行(综合A,D,E列)
+
+  Dim lastRowA As Long, lastRowD As Long, lastRowE As Long
+
+  ' 获取A,D,E列的最后一行
+  lastRowA = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+  lastRowD = ws.Cells(ws.Rows.Count, "D").End(xlUp).Row
+  lastRowE = ws.Cells(ws.Rows.Count, "E").End(xlUp).Row
+
+  ' 比较 D 和 E 的结果
+  Dim lastRowDE As Long
+  If lastRowD >= lastRowE Then
+     lastRowDE = lastRowD
+  Else
+     lastRowDE = lastRowE
+  End If
+
+  ' 若 D 或 E 的结果大于 A, 则取 D/E 中的较大值，否则+1
+  If lastRowDE > lastRowA Then
+     GetLastDataRow = lastRowDE
+  Else
+     If lastRowA < 2 Then
+       GetLastDataRow = 1
+     Else
+       GetLastDataRow = lastRowA + 1 ' 确保新行
+     End If
+  End If
+
+  Debug.Print "GetLastDataRow: lastRowA=" & lastRowA & ", lastRowD=" & lastRowD & ", lastRowE=" & lastRowE & ", Result=" & GetLastDataRow
+End Function
+
