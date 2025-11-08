@@ -32,13 +32,14 @@ Sub SyncJobsDBAndOrderEntryLog()
     ' 3. 如无则建表，所有字段均为TEXT类型
     If Not jobsDBExists Then
         Dim sqlCreate As String
-        sqlCreate = "CREATE TABLE IF NOT EXISTS jobs (" & _
-        "Job_ID INTEGER PRIMARY KEY AUTOINCREMENT, " & _
-        "OE_Number TEXT, Job_Number TEXT, Customer_Name TEXT, Job_Quantity TEXT, " & _
-        "Part_Number TEXT, Revision TEXT, Customer_Contact TEXT, Drawing_Release TEXT, Line_Number TEXT, " & _
-        "Part_Description TEXT, Unit_Price TEXT, PO_Number TEXT, Packing_Slip TEXT, Packing_Quantity TEXT, " & _
-        "Invoice_Number TEXT, Delivery_Required_Date TEXT, Delivery_Shipped_Date TEXT, " & _
-        "Create_Timestamp TEXT DEFAULT (datetime('now','localtime')), Last_Modified TEXT)"
+    sqlCreate = "CREATE TABLE IF NOT EXISTS jobs (" & _
+        "job_id INTEGER PRIMARY KEY AUTOINCREMENT, " & _
+        "oe_number TEXT, job_number TEXT, customer_name TEXT, job_quantity TEXT, " & _
+        "part_number TEXT, revision TEXT, customer_contact TEXT, drawing_release TEXT, line_number TEXT, " & _
+        "part_description TEXT, unit_price TEXT, po_number TEXT, packing_slip TEXT, packing_quantity TEXT, " & _
+        "invoice_number TEXT, delivery_required_date TEXT, delivery_shipped_date TEXT, " & _
+        "create_timestamp TEXT DEFAULT (datetime('now','localtime')), last_modified TEXT)"
+
         result = SQLite3PrepareV2(dbHandle, sqlCreate, stmtHandle)
         If result = SQLITE_OK Then SQLite3Step stmtHandle: SQLite3Finalize stmtHandle
         Debug.Print "数据库jobs.db已新建并初始化jobs表 (所有字段均为TEXT)"

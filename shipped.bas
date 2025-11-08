@@ -16,7 +16,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
                 ' 1. 移动数据到 Priority Sheet
                 If jobNum <> "" Then
                     Dim priRow As Long
-                    priRow = wsPri.Cells(wsPri.Rows.Count, 1).End(xlUp).Row + 1
+                    priRow = GetLastDataRow(wsPri) + 1 ' 使用 GetLastDataRow 函数
                     wsPri.Range(wsPri.Cells(priRow, 1), wsPri.Cells(priRow, 7)).Value = _
                         Me.Range(Me.Cells(rowCopy, 1), Me.Cells(rowCopy, 7)).Value 'A:G数据
 
@@ -60,13 +60,15 @@ Private Sub Worksheet_Change(ByVal Target As Range)
 
                 ' 3. 删除 Shipped 表行
                 Me.Rows(rowCopy).Delete
-                MsgBox "条目已返回到 Priority Sheet。", vbInformation
+                Debug.Print "条目已返回到 Priority Sheet。", vbInformation
 
             Case "Delete"
                 ' 确认是否删除
                 If MsgBox("确定要删除此条目吗？", vbYesNo + vbQuestion, "确认删除") = vbYes Then
-                    Me.Rows(rowCopy).Delete
-                    MsgBox "条目已删除。", vbInformation
+                    Dim rowsToDelete As Long
+                    rowsToDelete = CountParts(Me, rowCopy) ' 使用 CountParts 函数
+                    Me.Rows(rowCopy).Resize(rowsToDelete).Delete ' 删除多行
+                    Debug.Print "条目已删除。", vbInformation
                 Else
                     Target.Value = ""  ' 恢复为空
                 End If
