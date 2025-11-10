@@ -6,12 +6,12 @@ Creates a database with drawings table if not exists, then performs high-speed s
 #>
 
 # Configuration
-$gDrivePath = "G:\CANDU"
-$dbPath = "C:\YourProjectPath\jobs.db"  # <-- Change this to your DB path
+$gDrivePath = "G:\Bombardier"
+$dbPath = ".\jobs.db"  # <-- Change this to your DB path
 $batchSize = 500  # Files per transaction
 
 # Load SQLite assembly
-Add-Type -Path "System.Data.SQLite.dll"  # Required (download from sqlite.org)
+Add-Type -Path ".\System.Data.SQLite.dll"
 
 # Create database and table if not exists
 function Initialize-Database {

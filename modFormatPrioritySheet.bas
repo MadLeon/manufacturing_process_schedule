@@ -4,33 +4,33 @@ Sub FormatPrioritySheet()
     On Error Resume Next
     Set ws = ThisWorkbook.Sheets("Priority Sheet")
     If ws Is Nothing Then
-        MsgBox "未找到 Priority Sheet": Exit Sub
+        MsgBox "Priority Sheet not found": Exit Sub
     End If
     On Error GoTo 0
 
     Dim usedRng As Range, lastRow As Long, lastCol As Long
     lastRow = GetLastDataRow(ws)
-    lastCol = 9 ' 只处理前9列
+    lastCol = 9 ' Only process the first 9 columns
 
     Set usedRng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
 
-    ' 1. 单元格格式：文本, 字号, 字体
+    ' 1. Cell format: text, font size, font name
     usedRng.NumberFormat = "@"
     usedRng.Font.Name = "Cambria"
     usedRng.Font.Size = 16
 
-    ' 2. 所有单元格垂直居中
+    ' 2. All cells vertically centered
     usedRng.VerticalAlignment = xlVAlignCenter
 
-    ' 3. 列宽自动（类似双击列头右边）
+    ' 3. Auto-fit column width (like double-clicking the column header edge)
     usedRng.Columns.AutoFit
 
-    ' 4. 标题行设置
+    ' 4. Header row settings
     With ws.Range(ws.Cells(1, 1), ws.Cells(1, lastCol))
-        .Interior.Color = RGB(255, 199, 206) ' 淡粉色
+        .Interior.Color = RGB(255, 199, 206) ' Light pink
         .Font.Bold = True
         .HorizontalAlignment = xlCenter
-        ' 加内外所有边框（细线）
+        ' Add all inner and outer borders (thin line)
         With .Borders
             .LineStyle = xlContinuous
             .Color = vbBlack
@@ -38,8 +38,8 @@ Sub FormatPrioritySheet()
         End With
     End With
 
-    ' 5. 单元格水平居中和左对齐控制
-    ' 第1、2、3、6、7、8、9列全体：水平居中
+    ' 5. Cell horizontal alignment control
+    ' Columns 1,2,3,6,7,8,9: center horizontally
     ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, 1)).HorizontalAlignment = xlCenter
     ws.Range(ws.Cells(1, 2), ws.Cells(lastRow, 2)).HorizontalAlignment = xlCenter
     ws.Range(ws.Cells(1, 3), ws.Cells(lastRow, 3)).HorizontalAlignment = xlCenter
@@ -48,25 +48,25 @@ Sub FormatPrioritySheet()
     ws.Range(ws.Cells(1, 7), ws.Cells(lastRow, 7)).HorizontalAlignment = xlCenter
     ws.Range(ws.Cells(1, 8), ws.Cells(lastRow, 8)).HorizontalAlignment = xlCenter
     ws.Range(ws.Cells(1, 9), ws.Cells(lastRow, 9)).HorizontalAlignment = xlCenter
-    ' 第4，5列标题行外（2到lastRow）左对齐
+    ' Columns 4 (except header row): left align
     If lastRow > 1 Then
         ws.Range(ws.Cells(2, 4), ws.Cells(lastRow, 4)).HorizontalAlignment = xlLeft
     End If
 
-    ' 设置第7列（G列）从第二行到最后一行单元格格式为日期格式(yyyy-mm-dd)
+    ' Set column 7 (G) from row 2 to last row as date format (yyyy-mm-dd)
     If lastRow > 1 Then
         ws.Range(ws.Cells(2, 7), ws.Cells(lastRow, 7)).NumberFormat = "yyyy-mm-dd"
     End If
 
-    ' 6. 前9列加排序下拉按钮（自动筛选）
+    ' 6. Add sort/filter dropdowns to first 9 columns (AutoFilter)
     ws.Range(ws.Cells(1, 1), ws.Cells(1, lastCol)).AutoFilter
 
-    ' 7. 设置数据区域 A1:G 列边框
+    ' 7. Add borders to data area A1:G
     With ws.Range(ws.Cells(2, 1), ws.Cells(lastRow, 7)).Borders
         .LineStyle = xlContinuous
         .Color = vbBlack
         .Weight = xlThin
     End With
 
-    Debug.Print "Priority Sheet格式设置完成!"
+    Debug.Print "Priority Sheet formatting completed!"
 End Sub

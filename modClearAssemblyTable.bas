@@ -1,103 +1,67 @@
 Option Explicit
 
-Sub ClearAssemblyTable()
-    ' 清除 jobs.db 数据库中 assemblies 表的内容
+Sub ClearCustomerFolderMapTable()
+    ' Clear all content from the customer_folder_map table in jobs.db
+    Dim dbPath As String
+    dbPath = ThisWorkbook.Path & "\jobs.db"
 
-    Dim dbPath As String, dbHandle As LongPtr, result As Long, sqlDelete As String, stmtHandle As LongPtr
+    If Not InitializeSQLite(dbPath) Then Exit Sub
 
-    dbPath = ThisWorkbook.Path & "\jobs.db"  ' 数据库文件路径
+    Dim sqlClear As String
+    sqlClear = "DELETE FROM customer_folder_map"
 
-    ' 1. 初始化 SQLite3
-    result = SQLite3Initialize(ThisWorkbook.Path)
-    If result <> SQLITE_INIT_OK Then
-        MsgBox "SQLite3 初始化失败。请检查 SQLite3.dll 和 SQLite3_StdCall.dll 是否在同一目录下。": Exit Sub
-    End If
+    Dim result As Boolean
+    result = ExecuteNonQuery(sqlClear)
 
-    ' 2. 连接到数据库
-    result = SQLite3Open(dbPath, dbHandle)
-    If result <> SQLITE_OK Then
-        MsgBox "无法打开数据库 jobs.db。请检查文件是否存在以及权限。": SQLite3Free: Exit Sub
-    End If
+    CloseSQLite
 
-    ' 3. 构建 SQL DELETE 语句
-    sqlDelete = "DELETE FROM assemblies"
-
-    ' 4. 准备 SQL 语句
-    result = SQLite3PrepareV2(dbHandle, sqlDelete, stmtHandle)
-    If result = SQLITE_OK Then
-        ' 5. 执行 SQL 语句
-        result = SQLite3Step(stmtHandle)
-        SQLite3Finalize stmtHandle  ' 释放语句
-
-        If result = SQLITE_DONE Then
-            Debug.Print "Assembly information table 'assemblies' 已清空。"
-        Else
-            Debug.Print "清除表格时出错: " & result
-        End If
+    If result Then
+        MsgBox "All records in customer_folder_map table have been cleared!", vbInformation
     Else
-        Debug.Print "准备 SQL 语句时出错: " & SQLite3ErrMsg(dbHandle)
+        MsgBox "Failed to clear customer_folder_map table.", vbExclamation
+    End If
+End Sub
+
+Sub ClearAssemblyTable()
+    ' Clear contents of assemblies table in jobs.db database
+
+    Dim dbPath As String
+    dbPath = ThisWorkbook.Path & "\jobs.db"  ' Database file path
+
+    ' Initialize SQLite database
+    If Not InitializeSQLite(dbPath) Then Exit Sub
+
+    ' Execute DELETE statement
+    If ExecuteNonQuery("DELETE FROM assemblies") Then
+        Debug.Print "Assembly table 'assemblies' cleared successfully."
+        MsgBox "Assembly table cleared successfully!", vbInformation
+    Else
+        Debug.Print "Error clearing assemblies table."
+        MsgBox "Failed to clear assemblies table.", vbExclamation
     End If
 
-    ' 6. 关闭数据库连接
-    result = SQLite3Close(dbHandle)
-    If result <> SQLITE_OK Then
-        Debug.Print "关闭数据库连接时出错: " & SQLite3ErrMsg(dbHandle)
-    End If
-
-    ' 7. 释放 SQLite3 资源
-    SQLite3Free
-
-    MsgBox "Assembly information table 已成功清空！", vbInformation
-
+    ' Close SQLite database
+    CloseSQLite
 End Sub
 
 Sub ClearDrawingNumbers()
-    ' 清除 drawings 表中所有记录的 drawing_number 列的值
+    ' Clear drawing_number column values in drawings table
 
-    Dim dbPath As String, dbHandle As LongPtr, result As Long, sqlUpdate As String, stmtHandle As LongPtr
+    Dim dbPath As String
+    dbPath = ThisWorkbook.Path & "\jobs.db"  ' Database file path
 
-    dbPath = ThisWorkbook.Path & "\jobs.db"  ' 数据库文件路径
+    ' Initialize SQLite database
+    If Not InitializeSQLite(dbPath) Then Exit Sub
 
-    ' 1. 初始化 SQLite3
-    result = SQLite3Initialize(ThisWorkbook.Path)
-    If result <> SQLITE_INIT_OK Then
-        MsgBox "SQLite3 初始化失败。请检查 SQLite3.dll 和 SQLite3_StdCall.dll 是否在同一目录下。": Exit Sub
-    End If
-
-    ' 2. 连接到数据库
-    result = SQLite3Open(dbPath, dbHandle)
-    If result <> SQLITE_OK Then
-        MsgBox "无法打开数据库 jobs.db。请检查文件是否存在以及权限。": SQLite3Free: Exit Sub
-    End If
-
-    ' 3. 构建 SQL UPDATE 语句
-    sqlUpdate = "UPDATE drawings SET drawing_number = ''"
-
-    ' 4. 准备 SQL 语句
-    result = SQLite3PrepareV2(dbHandle, sqlUpdate, stmtHandle)
-    If result = SQLITE_OK Then
-        ' 5. 执行 SQL 语句
-        result = SQLite3Step(stmtHandle)
-        SQLite3Finalize stmtHandle  ' 释放语句
-
-        If result = SQLITE_DONE Then
-            Debug.Print "成功清除 drawings 表中所有记录的 drawing_number。"
-        Else
-            Debug.Print "清除 drawing_number 时出错: " & result
-        End If
+    ' Execute UPDATE statement
+    If ExecuteNonQuery("UPDATE drawings SET drawing_number = ''") Then
+        Debug.Print "Successfully cleared drawing_number in drawings table."
+        MsgBox "Drawing numbers cleared successfully!", vbInformation
     Else
-        Debug.Print "准备 SQL 语句时出错: " & SQLite3ErrMsg(dbHandle)
+        Debug.Print "Error clearing drawing numbers."
+        MsgBox "Failed to clear drawing numbers.", vbExclamation
     End If
 
-    ' 6. 关闭数据库连接
-    result = SQLite3Close(dbHandle)
-    If result <> SQLITE_OK Then
-        Debug.Print "关闭数据库连接时出错: " & SQLite3ErrMsg(dbHandle)
-    End If
-
-    ' 7. 释放 SQLite3 资源
-    SQLite3Free
-
-    MsgBox "成功清除 drawings 表中所有记录的 drawing_number!", vbInformation
-
+    ' Close SQLite database
+    CloseSQLite
 End Sub

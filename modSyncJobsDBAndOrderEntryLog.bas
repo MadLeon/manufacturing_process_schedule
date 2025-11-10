@@ -3,7 +3,7 @@ Option Explicit
 ' sync oe entry to jobs.db, then sync current workbook to jobs.db
 
 Sub SyncJobsDBAndOrderEntryLog()
-    ' --- 目标: jobs.db == oeentry(DELIVERY SCHEDULE), 本文件(DELIVERY SCHEDULE) ≈ jobs.db ---
+    ' --- Goal: jobs.db == oeentry(DELIVERY SCHEDULE), This file (DELIVERY SCHEDULE) ≈ jobs.db ---
     Dim dbPath As String, dbHandle As LongPtr, result As Long, stmtHandle As LongPtr
     Dim jobsDBExists As Boolean
     Dim srcEntryApp As Object, srcEntryBook As Workbook, srcEntryWS As Worksheet
@@ -17,19 +17,19 @@ Sub SyncJobsDBAndOrderEntryLog()
     dbPath = ThisWorkbook.Path & "\jobs.db"
     jobsDBExists = (Dir(dbPath) <> "")
 
-    ' 1. 初始化DLL
+    ' 1. Initialize DLL
     result = SQLite3Initialize(ThisWorkbook.Path)
     If result <> SQLITE_INIT_OK Then
-        MsgBox "SQLite3初始化失败": Exit Sub
+        MsgBox "SQLite3 initialization failed": Exit Sub
     End If
 
-    ' 2. 打开/新建数据库
+    ' 2. Open/Create database
     result = SQLite3Open(dbPath, dbHandle)
     If result <> SQLITE_OK Then
-        MsgBox "无法打开数据库: " & SQLite3ErrMsg(dbHandle): SQLite3Free: Exit Sub
+        MsgBox "Unable to open database: " & SQLite3ErrMsg(dbHandle): SQLite3Free: Exit Sub
     End If
 
-    ' 3. 如无则建表，所有字段均为TEXT类型
+    ' 3. Create table if not exists, all fields as TEXT type
     If Not jobsDBExists Then
         Dim sqlCreate As String
     sqlCreate = "CREATE TABLE IF NOT EXISTS jobs (" & _
@@ -42,30 +42,30 @@ Sub SyncJobsDBAndOrderEntryLog()
 
         result = SQLite3PrepareV2(dbHandle, sqlCreate, stmtHandle)
         If result = SQLITE_OK Then SQLite3Step stmtHandle: SQLite3Finalize stmtHandle
-        Debug.Print "数据库jobs.db已新建并初始化jobs表 (所有字段均为TEXT)"
+        Debug.Print "Database jobs.db created and jobs table initialized (all fields as TEXT)"
     Else
-        Debug.Print "数据库jobs.db已存在"
+        Debug.Print "Database jobs.db already exists"
     End If
 
-    ' 4. 打开 oe entry log.xlsm 的 DELIVERY SCHEDULE sheet(只读后台)
+    ' 4. Open DELIVERY SCHEDULE sheet in order entry log.xlsm (read-only, background)
     Set srcEntryApp = CreateObject("Excel.Application")
     srcEntryApp.Visible = False
     srcEntryApp.DisplayAlerts = False
     Set srcEntryBook = srcEntryApp.Workbooks.Open(ThisWorkbook.Path & "\order entry log.xlsm", ReadOnly:=True)
     Set srcEntryWS = srcEntryBook.Sheets("DELIVERY SCHEDULE")
     lastRowEntry = srcEntryWS.Cells(srcEntryWS.Rows.Count, 1).End(-4162).Row
-    Debug.Print "oe entry 行数: "; lastRowEntry - 3
+    Debug.Print "Number of rows in oe entry: ", lastRowEntry - 3
 
-    ' 5. 生成字典：oeentry(Job_Number为key)
+    ' 5. Build dictionary: oeentry(Job_Number as key)
     Set entryDict = CreateObject("Scripting.Dictionary")
     For r = 4 To lastRowEntry
         If Trim(srcEntryWS.Cells(r, 2).Value) <> "" Then
             entryDict(Trim(srcEntryWS.Cells(r, 2).Value)) = r
         End If
     Next
-    Debug.Print "oe entry Job_Number 条数: "; entryDict.Count
+    Debug.Print "Number of Job_Number in oe entry: ", entryDict.Count
 
-    ' 6. 生成数据库当前Job_Number字典
+    ' 6. Build dictionary of current Job_Number in database
     Set dbDict = CreateObject("Scripting.Dictionary")
     selectSQL = "SELECT Job_Number FROM jobs"
     result = SQLite3PrepareV2(dbHandle, selectSQL, stmtHandle)
@@ -75,16 +75,16 @@ Sub SyncJobsDBAndOrderEntryLog()
         Loop
         SQLite3Finalize stmtHandle
     End If
-    Debug.Print "数据库 jobs.db Job_Number 条数: "; dbDict.Count
+    Debug.Print "Number of Job_Number in jobs.db: ", dbDict.Count
 
-    ' 7. ============ A. 同步数据库与oe entry（强一致） =============
-    '   - 1) 新增 oe entry有(db无) ==> db插入
-    '   - 2) 删除 db有(oe entry无) ==> db删除
+    ' 7. ============ A. Synchronize database and oe entry (strong consistency) =============
+    '   - 1) Add: oe entry has (db does not) ==> insert into db
+    '   - 2) Delete: db has (oe entry does not) ==> delete from db
     insertSQL = "INSERT INTO jobs (OE_Number, Job_Number, Customer_Name, Job_Quantity, Part_Number, Revision, Customer_Contact, " & _
       "Drawing_Release, Line_Number, Part_Description, Unit_Price, PO_Number, Packing_Slip, Packing_Quantity, Invoice_Number, Delivery_Required_Date, Delivery_Shipped_Date, Last_Modified) " & _
       "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
-    ' (1) 新增，全部用SQLite3BindText
+    ' (1) Add, all use SQLite3BindText
     Dim addedToDB As Long
     addedToDB = 0
     For Each k In entryDict.Keys
@@ -98,14 +98,14 @@ Sub SyncJobsDBAndOrderEntryLog()
                 SQLite3BindText stmtHandle, 18, Format(Now, "yyyy-mm-dd HH:nn:ss")
                 SQLite3Step stmtHandle
                 SQLite3Finalize stmtHandle
-                ' Debug.Print "新增到数据库: Job_Number=" & k
+                ' Debug.Print "Added to database: Job_Number=" & k
                 addedToDB = addedToDB + 1
             End If
         End If
     Next
-    Debug.Print "本次共新增到数据库条目数: "; addedToDB
+    Debug.Print "Number of entries added to database this time: ", addedToDB
 
-    ' (2) 删除
+    ' (2) Delete
     Dim deletedFromDB As Long
     deletedFromDB = 0
     For Each k In dbDict.Keys
@@ -116,12 +116,12 @@ Sub SyncJobsDBAndOrderEntryLog()
                 SQLite3BindText stmtHandle, 1, k
                 SQLite3Step stmtHandle
                 SQLite3Finalize stmtHandle
-                Debug.Print "已从数据库删除: Job_Number=" & k
+                Debug.Print "Deleted from database: Job_Number=" & k
                 deletedFromDB = deletedFromDB + 1
             End If
         End If
     Next
-    Debug.Print "本次共从数据库删除条目数: "; deletedFromDB
+    Debug.Print "Number of entries deleted from database this time: ", deletedFromDB
 
     srcEntryBook.Close False
     srcEntryApp.Quit
@@ -132,6 +132,6 @@ Sub SyncJobsDBAndOrderEntryLog()
     SQLite3Close dbHandle
     SQLite3Free
     
-    Debug.Print "同步 oe entry 与 jobs.db 完成！"
+    Debug.Print "Synchronization between oe entry and jobs.db completed!"
 End Sub
 

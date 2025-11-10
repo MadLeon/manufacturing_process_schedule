@@ -1,7 +1,7 @@
 Sub SyncCurrentSheetAndJobsDB()
-    ' 本地 test.xlsm 根据 jobs.db 内容同步：
-    ' 1. 本地 Priority Sheet 有但数据库无的，移到shipped sheet
-    ' 2. 数据库有但本地 Priority Sheet 无的，摘取部分字段添加到 Priority Sheet 末尾，并设置样式
+    ' Synchronize local test.xlsm with jobs.db content:
+    ' 1. If a job exists in the local Priority Sheet but not in the database, move it to the Shipped sheet
+    ' 2. If a job exists in the database but not in the local Priority Sheet, append it to the end of the Priority Sheet and format it
 
     Dim dbPath As String, dbHandle As LongPtr, result As Long, stmtHandle As LongPtr
     Dim curBook As Workbook, curWS As Worksheet, shippedWS As Worksheet
@@ -13,7 +13,7 @@ Sub SyncCurrentSheetAndJobsDB()
     dbPath = ThisWorkbook.Path & "\jobs.db"
     Set curBook = ThisWorkbook
     
-    ' 获取/新建 Priority Sheet 并设置表头
+    ' Get or create Priority Sheet and set header
     On Error Resume Next
     Set curWS = curBook.Sheets("Priority Sheet")
     If curWS Is Nothing Then
@@ -22,24 +22,24 @@ Sub SyncCurrentSheetAndJobsDB()
     End If
     On Error GoTo 0
 
-    ' 设置表头 A1:I1
+    ' Set header A1:I1
     With curWS
         .Range("A1:I1").Value = Array("JOB #", "PO #", "Customer", "Description", "Part #", "Qty.", "Ship Date", "Memo", "Status")
     End With
 
     lastRowCur = GetLastDataRow(curWS)
 
-    ' 1. 初始化DLL
+    ' 1. Initialize DLL
     result = SQLite3Initialize(ThisWorkbook.Path)
     If result <> 0 Then
-        MsgBox "SQLite3初始化失败": Exit Sub
+        MsgBox "SQLite3 initialization failed": Exit Sub
     End If
     result = SQLite3Open(dbPath, dbHandle)
     If result <> 0 Then
-        MsgBox "无法打开数据库": Exit Sub
+        MsgBox "Unable to open database": Exit Sub
     End If
 
-    ' 2. 获取数据库Job Number清单
+    ' 2. Get job list from database
     Set dbDict = CreateObject("Scripting.Dictionary")
     selectSQL = "SELECT Job_Number, PO_Number, Customer_Name, Part_description, Part_Number, Job_Quantity, Delivery_Required_Date FROM jobs"
     result = SQLite3PrepareV2(dbHandle, selectSQL, stmtHandle)
@@ -61,25 +61,25 @@ Sub SyncCurrentSheetAndJobsDB()
         SQLite3Finalize stmtHandle
     End If
 
-    ' 3. 查找PrioritySheet
+    ' 3. Scan Priority Sheet
     Set curDict = CreateObject("Scripting.Dictionary")
     For r = 2 To lastRowCur
-        jobNum = Trim(curWS.Cells(r, 1).Value) 'JOB # 在第1列
+        jobNum = Trim(curWS.Cells(r, 1).Value) 'JOB # ÔÚµÚ1ÁÐ
         If jobNum <> "" Then
             curDict(jobNum) = r
         End If
     Next
 
-    ' 4.  获取/创建 Shipped sheet
+    ' 4.  Get or create Shipped sheet
     On Error Resume Next
     Set shippedWS = curBook.Sheets("Shipped")
     If shippedWS Is Nothing Then
         Set shippedWS = curBook.Sheets.Add(After:=curBook.Sheets(curBook.Sheets.Count))
         shippedWS.Name = "Shipped"
-        ' 设置 shipped sheet 表头
+    ' Set Shipped sheet header
         shippedWS.Range("A1:I1").Value = Array("JOB #", "PO #", "Customer", "Description", "Part #", "Qty.", "Ship Date", "Memo", "Status")
         With shippedWS.Range(shippedWS.Cells(1, 1), shippedWS.Cells(1, 10))
-            .Interior.Color = RGB(255, 199, 206) ' 淡粉色
+            .Interior.Color = RGB(255, 199, 206) ' Light red color
             .Font.Bold = True
             .Font.Size = 16
             .Font.Name = "Cambria"
@@ -94,70 +94,68 @@ Sub SyncCurrentSheetAndJobsDB()
     End If
     On Error GoTo 0
 
-    ' -------- 5. 处理从 Priority Sheet 移动到 Shipped 的行 --------
+    ' -------- 5. Process rows to move from Priority Sheet to Shipped --------
     Dim movedCount As Long: movedCount = 0
-    r = 2 ' 从数据区域第一行开始
+    r = 2 ' Start from the first data row
     Do While r <= lastRowCur
         jobNum = Trim(curWS.Cells(r, 1).Value)
-        If jobNum <> "" Then  ' 如果是 Job 行
+        If jobNum <> "" Then  ' If this is a Job row
             If Not dbDict.Exists(jobNum) Then
-                ' 获取该job下面所有的part数
+                ' Get the number of parts under this job
                 Dim partsCount As Long
                 partsCount = CountParts(curWS, r)
 
-                ' 计算要移动的总行数
+                ' Calculate total rows to move
                 Dim totalRowsToMove As Long
                 totalRowsToMove = 1 + partsCount
 
-                ' 获取 Shipped 表的最后一行
+                ' Get the last row of the Shipped sheet
                 Dim shipLastRow As Long: shipLastRow = GetLastDataRow(shippedWS) + 1
 
-                ' 移动
-                curWS.Rows(r).Resize(totalRowsToMove).Copy shippedWS.Rows(shipLastRow)
+                ' Move rows
+                curWS.rows(r).Resize(totalRowsToMove).Copy shippedWS.rows(shipLastRow)
 
-                ' 删除
-                curWS.Rows(r).Resize(totalRowsToMove).Delete
+                ' Delete rows
+                curWS.rows(r).Resize(totalRowsToMove).Delete
 
-                ' 更新行数
+                ' Update row count
                 movedCount = movedCount + totalRowsToMove
                 lastRowCur = GetLastDataRow(curWS)
-                ' LastRowCur = shippedLastRow
 
-                ' !!!!! 重要: 同步 r 的值, 避免跳过行 !!!!!
-                r = r - 1 ' 因为删除了, 本行要重新检查
-                If r < 2 Then r = 2 ' 防止r小于表头
+                ' IMPORTANT: Sync r value to avoid skipping rows
+                r = r - 1 ' Because of deletion, recheck this row
+                If r < 2 Then r = 2 ' Prevent r from being less than header
 
              Else
-                 r = r + 1 '跳到下个job开始位置
+                 r = r + 1 'Jump to next job start position
             End If
-             
         End If
-       
-         r = r + 1
+
+        r = r + 1
         If r > lastRowCur Then Exit Do
     Loop
-    Debug.Print "总共移动 " & movedCount & " 行"
+    Debug.Print "Total moved " & movedCount & " rows"
 
-    ' -------- 7. 只有发生了数据移动才触发列宽自动调整 --------
+    ' -------- 7. Only trigger autofit if data was moved --------
     If movedCount > 0 Then
         Dim shippedLastRow As Long
         Dim shippedUsedRng As Range
-        shippedLastRow = shippedWS.Cells(shippedWS.Rows.Count, 1).End(-4162).Row
-        Set shippedUsedRng = shippedWS.Range(shippedWS.Cells(1, 1), shippedWS.Cells(shippedLastRow, 10)) ' 包含J列
+        shippedLastRow = shippedWS.Cells(shippedWS.rows.Count, 1).End(-4162).row
+        Set shippedUsedRng = shippedWS.Range(shippedWS.Cells(1, 1), shippedWS.Cells(shippedLastRow, 10)) ' °üº¬JÁÐ
         shippedUsedRng.Columns.AutoFit
     End If
 
-    ' -------- 8. 数据库有但本地 Priority Sheet 无的条目，添加至 Priority Sheet，同时插入空行、并设置格式  --------
+    ' -------- 8. If a job exists in the database but not in the local Priority Sheet, add it to Priority Sheet, insert blank rows, and format --------
     Dim rg As Range
     Dim assemblySQL As String, assemblyStmtHandle As LongPtr, drawingNumber As String
     Dim jobInfoSQL As String, jobInfoStmtHandle As LongPtr
     Dim partDescription As String, jobQuantity As String, drawingRelease As String
     For Each k In dbDict.Keys
         If Not curDict.Exists(k) Then
-            ' 在 Priority Sheet 追加记录
+            ' Append record to Priority Sheet
             lastRowCur = lastRowCur + 1
 
-            ' 从数据库提取内容，并按字段添加新数据
+            ' Fetch content from database and add new data by field
             With curWS
                 .Cells(lastRowCur, 1).Value = dbDict(k)(0) 'JOB #
                 .Cells(lastRowCur, 2).Value = dbDict(k)(1) 'PO #
@@ -168,24 +166,24 @@ Sub SyncCurrentSheetAndJobsDB()
                 .Cells(lastRowCur, 7).Value = dbDict(k)(6) 'Ship Date
             End With
 
-            ' 调用CreateSingleHyperlink添加超链接
+            ' Call CreateSingleHyperlink to add hyperlink
             Call CreateSingleHyperlink(curWS.Cells(lastRowCur, 5), dbHandle)
 
-            ' 设置数据行区域：A-G列，设为橙色
+            ' Set data row area: columns A-G, set to orange
             Set rg = curWS.Range(curWS.Cells(lastRowCur, 1), curWS.Cells(lastRowCur, 7))
             With rg
-                .Interior.Color = RGB(255, 199, 44) ' 橙色
+                .Interior.Color = RGB(255, 199, 44) ' Orange
             End With
 
-            ' 设置灰色背景 for 空行
+            ' Set gray background for blank row
             lastRowCur = lastRowCur + 1
             
             Set rg = curWS.Range(curWS.Cells(lastRowCur, 1), curWS.Cells(lastRowCur, 7))
             With rg
-                .Interior.Color = RGB(242, 242, 242) ' 淡灰色
+                .Interior.Color = RGB(242, 242, 242) ' Light gray
             End With
 
-            ' 查询 assemblies 表获取 drawing_number
+            ' Query assemblies table to get drawing_number
             Dim partNumber As String: partNumber = dbDict(k)(4) ' Part #
             assemblySQL = "SELECT drawing_number FROM assemblies WHERE part_number = '" & partNumber & "'"
             result = SQLite3PrepareV2(dbHandle, assemblySQL, assemblyStmtHandle)
@@ -194,7 +192,7 @@ Sub SyncCurrentSheetAndJobsDB()
                 Do While SQLite3Step(assemblyStmtHandle) = 100
                     drawingNumber = Trim(SQLite3ColumnText(assemblyStmtHandle, 0))
                     If drawingNumber <> "" Then
-                        ' 根据 drawing_number 查询 jobs 表获取 part_description 和 job_quantity
+                        ' Query jobs table by drawing_number to get part_description and job_quantity
                         jobInfoSQL = "SELECT Part_description, Job_Quantity, Drawing_Release FROM jobs WHERE Part_Number = '" & drawingNumber & "'"
                         Dim jobInfoResult As Long: jobInfoResult = SQLite3PrepareV2(dbHandle, jobInfoSQL, jobInfoStmtHandle)
                         If jobInfoResult = 0 Then
@@ -204,25 +202,25 @@ Sub SyncCurrentSheetAndJobsDB()
                                 drawingRelease = Trim(SQLite3ColumnText(jobInfoStmtHandle, 2))
 
                                 If firstDrawing Then
-                                    ' 第一次找到 drawing_number，直接在当前灰色背景行进行操作
-                                    curWS.Cells(lastRowCur, 5).Value = drawingNumber ' E列: drawing_number
-                                    curWS.Cells(lastRowCur, 4).Value = partDescription ' D列: part_description
-                                    curWS.Cells(lastRowCur, 6).Value = jobQuantity ' F列: job_quantity
-                                    curWS.Cells(lastRowCur, 7).Value = drawingRelease ' G列: drawing_release
+                                    ' For the first drawing_number, operate directly on the current gray background row
+                                    curWS.Cells(lastRowCur, 5).Value = drawingNumber ' Col E: drawing_number
+                                    curWS.Cells(lastRowCur, 4).Value = partDescription ' Col D: part_description
+                                    curWS.Cells(lastRowCur, 6).Value = jobQuantity ' Col F: job_quantity
+                                    curWS.Cells(lastRowCur, 7).Value = drawingRelease ' Col G: drawing_release
                                     firstDrawing = False
                                 Else
-                                    ' 后续找到的 drawing_number，先添加一个灰色行
+                                    ' For subsequent drawing_numbers, add a gray row first
                                     lastRowCur = lastRowCur + 1
                                     Set rg = curWS.Range(curWS.Cells(lastRowCur, 1), curWS.Cells(lastRowCur, 7))
                                     With rg
-                                        .Interior.Color = RGB(242, 242, 242) ' 淡灰色
+                                        .Interior.Color = RGB(242, 242, 242) ' Light gray
                                     End With
 
-                                    ' 然后将查询到的信息填入
-                                    curWS.Cells(lastRowCur, 5).Value = drawingNumber ' E列: drawing_number
-                                    curWS.Cells(lastRowCur, 4).Value = partDescription ' D列: part_description
-                                    curWS.Cells(lastRowCur, 6).Value = jobQuantity ' F列: job_quantity
-                                    curWS.Cells(lastRowCur, 7).Value = drawingRelease ' G列: drawing_release
+                                    ' Then fill in the queried info
+                                    curWS.Cells(lastRowCur, 5).Value = drawingNumber ' Col E: drawing_number
+                                    curWS.Cells(lastRowCur, 4).Value = partDescription ' Col D: part_description
+                                    curWS.Cells(lastRowCur, 6).Value = jobQuantity ' Col F: job_quantity
+                                    curWS.Cells(lastRowCur, 7).Value = drawingRelease ' Col G: drawing_release
                                 End If
                             End If
                             SQLite3Finalize jobInfoStmtHandle
@@ -234,27 +232,27 @@ Sub SyncCurrentSheetAndJobsDB()
         End If
     Next
 
-    ' -------- 9. 完成清理工作 --------
+    ' -------- 9. Complete cleanup --------
     SQLite3Close dbHandle
     SQLite3Free
     Set curDict = Nothing: Set dbDict = Nothing
     Set srcEntryBook = Nothing: Set srcEntryWS = Nothing: Set srcEntryApp = Nothing
 
-    Debug.Print "本地文件与数据库同步已完成"
+    Debug.Print "Local file and database synchronization completed"
 End Sub
 
-'统计零部件方法：
+'Í³¼ÆÁã²¿¼þ·½·¨£º
 Function CountParts(ws As Worksheet, startRow As Long) As Long
     Dim r As Long
     Dim lastRowD As Long, lastRowE As Long
     
     CountParts = 0
 
-    ' 获取D列和E列的最后一行数据行
-    lastRowD = ws.Cells(ws.Rows.Count, "D").End(xlUp).Row
-    lastRowE = ws.Cells(ws.Rows.Count, "E").End(xlUp).Row
+    ' Get the last data row in columns D and E
+    lastRowD = ws.Cells(ws.rows.Count, "D").End(xlUp).row
+    lastRowE = ws.Cells(ws.rows.Count, "E").End(xlUp).row
 
-    ' 取较大者作为基准
+    ' Use the larger one as the base
     Dim lastRow As Long
     If lastRowD >= lastRowE Then
         lastRow = lastRowD
@@ -268,16 +266,16 @@ Function CountParts(ws As Worksheet, startRow As Long) As Long
       lastRow = startRow + 1
     End If
 
-    r = startRow + 1 ' 从下一行开始
+    r = startRow + 1 ' Start from the next row
 
     Do While r <= lastRow
         If Trim(ws.Cells(r, 1).Value) <> "" Then
-            Debug.Print "CountParts: 在第 " & r & " 行遇到下一个Job，Part信息结束"
-            Exit Do ' 遇到下一个 Job,退出
+            Debug.Print "CountParts: Found next Job at row " & r & ", part info ends"
+            Exit Do ' Found next Job, exit
         End If
-        
+
         CountParts = CountParts + 1
-        r = r + 1 ' 移动到下一行
+        r = r + 1 ' Move to next row
     Loop
 
     Debug.Print "CountParts: Found " & CountParts & " parts for Job at row " & startRow
@@ -285,16 +283,16 @@ Function CountParts(ws As Worksheet, startRow As Long) As Long
 End Function
 
 Function GetLastDataRow(ws As Worksheet) As Long
-  ' 获取 Priority Sheet 数据的最后一行(综合A,D,E列)
+    ' Get the last data row in Priority Sheet (combine columns A, D, E)
 
   Dim lastRowA As Long, lastRowD As Long, lastRowE As Long
 
-  ' 获取A,D,E列的最后一行
-  lastRowA = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
-  lastRowD = ws.Cells(ws.Rows.Count, "D").End(xlUp).Row
-  lastRowE = ws.Cells(ws.Rows.Count, "E").End(xlUp).Row
+    ' Get the last row in columns A, D, E
+  lastRowA = ws.Cells(ws.rows.Count, "A").End(xlUp).row
+  lastRowD = ws.Cells(ws.rows.Count, "D").End(xlUp).row
+  lastRowE = ws.Cells(ws.rows.Count, "E").End(xlUp).row
 
-  ' 比较 D 和 E 的结果
+    ' Compare D and E results
   Dim lastRowDE As Long
   If lastRowD >= lastRowE Then
      lastRowDE = lastRowD
@@ -302,18 +300,16 @@ Function GetLastDataRow(ws As Worksheet) As Long
      lastRowDE = lastRowE
   End If
 
-  ' 若 D 或 E 的结果大于 A, 则取 D/E 中的较大值，否则+1
+    ' If D or E is greater than A, take the larger of D/E, otherwise +1
   If lastRowDE > lastRowA Then
      GetLastDataRow = lastRowDE
   Else
      If lastRowA < 2 Then
        GetLastDataRow = 1
      Else
-       GetLastDataRow = lastRowA + 1 ' 确保新行
+       GetLastDataRow = lastRowA + 1 ' È·±£ÐÂÐÐ
      End If
   End If
 
-  Debug.Print "GetLastDataRow: lastRowA=" & lastRowA & ", lastRowD=" & lastRowD & ", lastRowE=" & lastRowE & ", Result=" & GetLastDataRow
+    Debug.Print "GetLastDataRow: lastRowA=" & lastRowA & ", lastRowD=" & lastRowD & ", lastRowE=" & lastRowE & ", Result=" & GetLastDataRow
 End Function
-
-
