@@ -41,19 +41,20 @@ Sub SyncCurrentSheetAndJobsDB()
 
     ' 2. 获取数据库Job Number清单
     Set dbDict = CreateObject("Scripting.Dictionary")
-    selectSQL = "SELECT Job_Number, PO_Number, Customer_Name, Part_Number, Job_Quantity, Delivery_Required_Date FROM jobs"
+    selectSQL = "SELECT Job_Number, PO_Number, Customer_Name, Part_description, Part_Number, Job_Quantity, Delivery_Required_Date FROM jobs"
     result = SQLite3PrepareV2(dbHandle, selectSQL, stmtHandle)
     If result = 0 Then
         Do While SQLite3Step(stmtHandle) = 100
             jobNum = Trim(SQLite3ColumnText(stmtHandle, 0))
             If jobNum <> "" Then
-                Dim jobData(5) As Variant
+                Dim jobData(6) As Variant
                 jobData(0) = SQLite3ColumnText(stmtHandle, 0) ' Job_Number
                 jobData(1) = SQLite3ColumnText(stmtHandle, 1) ' PO_Number
                 jobData(2) = SQLite3ColumnText(stmtHandle, 2) ' Customer_Name
-                jobData(3) = SQLite3ColumnText(stmtHandle, 3) ' Part_Number
-                jobData(4) = SQLite3ColumnText(stmtHandle, 4) ' Job_Quantity
-                jobData(5) = SQLite3ColumnText(stmtHandle, 5) ' Delivery_Required_Date
+                jobData(3) = SQLite3ColumnText(stmtHandle, 3) ' Part_Description
+                jobData(4) = SQLite3ColumnText(stmtHandle, 4) ' Part_Number
+                jobData(5) = SQLite3ColumnText(stmtHandle, 5) ' Job_Quantity
+                jobData(6) = SQLite3ColumnText(stmtHandle, 6) ' Delivery_Required_Date
                 dbDict(jobNum) = jobData
             End If
         Loop
@@ -148,6 +149,9 @@ Sub SyncCurrentSheetAndJobsDB()
 
     ' -------- 8. 数据库有但本地 Priority Sheet 无的条目，添加至 Priority Sheet，同时插入空行、并设置格式  --------
     Dim rg As Range
+    Dim assemblySQL As String, assemblyStmtHandle As LongPtr, drawingNumber As String
+    Dim jobInfoSQL As String, jobInfoStmtHandle As LongPtr
+    Dim partDescription As String, jobQuantity As String, drawingRelease As String
     For Each k In dbDict.Keys
         If Not curDict.Exists(k) Then
             ' 在 Priority Sheet 追加记录
@@ -158,10 +162,14 @@ Sub SyncCurrentSheetAndJobsDB()
                 .Cells(lastRowCur, 1).Value = dbDict(k)(0) 'JOB #
                 .Cells(lastRowCur, 2).Value = dbDict(k)(1) 'PO #
                 .Cells(lastRowCur, 3).Value = dbDict(k)(2) 'Customer
-                .Cells(lastRowCur, 5).Value = dbDict(k)(3) 'Part #
-                .Cells(lastRowCur, 6).Value = dbDict(k)(4) 'Qty.
-                .Cells(lastRowCur, 7).Value = dbDict(k)(5) 'Ship Date
+                .Cells(lastRowCur, 4).Value = dbDict(k)(3) 'Description
+                .Cells(lastRowCur, 5).Value = dbDict(k)(4) 'Part #
+                .Cells(lastRowCur, 6).Value = dbDict(k)(5) 'Qty.
+                .Cells(lastRowCur, 7).Value = dbDict(k)(6) 'Ship Date
             End With
+
+            ' 调用CreateSingleHyperlink添加超链接
+            Call CreateSingleHyperlink(curWS.Cells(lastRowCur, 5), dbHandle)
 
             ' 设置数据行区域：A-G列，设为橙色
             Set rg = curWS.Range(curWS.Cells(lastRowCur, 1), curWS.Cells(lastRowCur, 7))
@@ -177,6 +185,52 @@ Sub SyncCurrentSheetAndJobsDB()
                 .Interior.Color = RGB(242, 242, 242) ' 淡灰色
             End With
 
+            ' 查询 assemblies 表获取 drawing_number
+            Dim partNumber As String: partNumber = dbDict(k)(4) ' Part #
+            assemblySQL = "SELECT drawing_number FROM assemblies WHERE part_number = '" & partNumber & "'"
+            result = SQLite3PrepareV2(dbHandle, assemblySQL, assemblyStmtHandle)
+            If result = 0 Then
+                Dim firstDrawing As Boolean: firstDrawing = True
+                Do While SQLite3Step(assemblyStmtHandle) = 100
+                    drawingNumber = Trim(SQLite3ColumnText(assemblyStmtHandle, 0))
+                    If drawingNumber <> "" Then
+                        ' 根据 drawing_number 查询 jobs 表获取 part_description 和 job_quantity
+                        jobInfoSQL = "SELECT Part_description, Job_Quantity, Drawing_Release FROM jobs WHERE Part_Number = '" & drawingNumber & "'"
+                        Dim jobInfoResult As Long: jobInfoResult = SQLite3PrepareV2(dbHandle, jobInfoSQL, jobInfoStmtHandle)
+                        If jobInfoResult = 0 Then
+                            If SQLite3Step(jobInfoStmtHandle) = 100 Then
+                                partDescription = Trim(SQLite3ColumnText(jobInfoStmtHandle, 0))
+                                jobQuantity = Trim(SQLite3ColumnText(jobInfoStmtHandle, 1))
+                                drawingRelease = Trim(SQLite3ColumnText(jobInfoStmtHandle, 2))
+
+                                If firstDrawing Then
+                                    ' 第一次找到 drawing_number，直接在当前灰色背景行进行操作
+                                    curWS.Cells(lastRowCur, 5).Value = drawingNumber ' E列: drawing_number
+                                    curWS.Cells(lastRowCur, 4).Value = partDescription ' D列: part_description
+                                    curWS.Cells(lastRowCur, 6).Value = jobQuantity ' F列: job_quantity
+                                    curWS.Cells(lastRowCur, 7).Value = drawingRelease ' G列: drawing_release
+                                    firstDrawing = False
+                                Else
+                                    ' 后续找到的 drawing_number，先添加一个灰色行
+                                    lastRowCur = lastRowCur + 1
+                                    Set rg = curWS.Range(curWS.Cells(lastRowCur, 1), curWS.Cells(lastRowCur, 7))
+                                    With rg
+                                        .Interior.Color = RGB(242, 242, 242) ' 淡灰色
+                                    End With
+
+                                    ' 然后将查询到的信息填入
+                                    curWS.Cells(lastRowCur, 5).Value = drawingNumber ' E列: drawing_number
+                                    curWS.Cells(lastRowCur, 4).Value = partDescription ' D列: part_description
+                                    curWS.Cells(lastRowCur, 6).Value = jobQuantity ' F列: job_quantity
+                                    curWS.Cells(lastRowCur, 7).Value = drawingRelease ' G列: drawing_release
+                                End If
+                            End If
+                            SQLite3Finalize jobInfoStmtHandle
+                        End If
+                    End If
+                Loop
+                SQLite3Finalize assemblyStmtHandle
+            End If
         End If
     Next
 
@@ -261,4 +315,5 @@ Function GetLastDataRow(ws As Worksheet) As Long
 
   Debug.Print "GetLastDataRow: lastRowA=" & lastRowA & ", lastRowD=" & lastRowD & ", lastRowE=" & lastRowE & ", Result=" & GetLastDataRow
 End Function
+
 

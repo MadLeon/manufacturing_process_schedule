@@ -9,7 +9,7 @@ Sub FormatPrioritySheet()
     On Error GoTo 0
 
     Dim usedRng As Range, lastRow As Long, lastCol As Long
-    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row + 1
+    lastRow = GetLastDataRow(ws)
     lastCol = 9 ' 只处理前9列
 
     Set usedRng = ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
@@ -51,6 +51,11 @@ Sub FormatPrioritySheet()
     ' 第4，5列标题行外（2到lastRow）左对齐
     If lastRow > 1 Then
         ws.Range(ws.Cells(2, 4), ws.Cells(lastRow, 4)).HorizontalAlignment = xlLeft
+    End If
+
+    ' 设置第7列（G列）从第二行到最后一行单元格格式为日期格式(yyyy-mm-dd)
+    If lastRow > 1 Then
+        ws.Range(ws.Cells(2, 7), ws.Cells(lastRow, 7)).NumberFormat = "yyyy-mm-dd"
     End If
 
     ' 6. 前9列加排序下拉按钮（自动筛选）
