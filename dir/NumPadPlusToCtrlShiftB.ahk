@@ -1,0 +1,1 @@
+﻿NumpadAdd::Send "{Ctrl down}{Shift down}b{Shift up}{Ctrl up}"

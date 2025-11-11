@@ -124,6 +124,10 @@ Private Sub GenRandomNumber_Click()
     lowerDp = CountDecimalPlaces(Me.LowerTolerance.Text)
     decPlaces = IIf(upperDp > lowerDp, upperDp, lowerDp)
 
+    ' Check if both tolerances are whole numbers
+    Dim bothWholeNumbers As Boolean
+    bothWholeNumbers = (upperTol = Int(upperTol)) And (lowerTol = Int(lowerTol))
+
     ' Ensure tolerances are valid
     If upperTol < lowerTol Then
         MsgBox "Upper Tolerance must be greater than or equal to Lower Tolerance.", vbExclamation, "Input Error"
@@ -136,13 +140,15 @@ Private Sub GenRandomNumber_Click()
         ' Upper and lower bounds are the same, use that value
         resultVal = lowerTol
         For idx = 1 To Data_SharedValues.ItemCount
-            If decPlaces > 0 Then
-                 resultStr = Format(resultVal, "0." & String(decPlaces, "0"))
-             Else
+            If bothWholeNumbers Then
+                resultStr = CStr(Int(resultVal))
+            ElseIf decPlaces > 0 Then
+                resultStr = Format(resultVal, "0." & String(decPlaces, "0"))
+            Else
                 resultStr = CStr(resultVal)
             End If
             ' --------- START: Remove leading zero directly within text box assignment ---------
-            If decPlaces > 0 Then
+            If Not bothWholeNumbers And decPlaces > 0 Then
                 If Left(resultStr, 2) = "0." Then
                     resultStr = Mid(resultStr, 2)
                 ElseIf Left(resultStr, 3) = "-0." Then
@@ -159,28 +165,109 @@ Private Sub GenRandomNumber_Click()
             Dim randomNumber As Double
             randomNumber = Rnd
 
-            ' Scale the random number to the range, using *more* precision.
-            resultVal = lowerTol + (upperTol - lowerTol) * randomNumber
-
-            If decPlaces > 0 Then
-                resultStr = Format(resultVal, "0." & String(decPlaces, "0"))
-            Else
+            If bothWholeNumbers Then
+                ' Generate a random integer between lowerTol and upperTol (inclusive)
+                resultVal = Int((upperTol - lowerTol + 1) * randomNumber + lowerTol)
                 resultStr = CStr(resultVal)
-            End If
-
-            ' --------- START: Remove leading zero directly within text box assignment ---------
-            If decPlaces > 0 Then
-                If Left(resultStr, 2) = "0." Then
-                    resultStr = Mid(resultStr, 2)
-                ElseIf Left(resultStr, 3) = "-0." Then
-                    resultStr = "-" & Mid(resultStr, 3)
+            Else
+                ' Scale the random number to the range, using *more* precision.
+                resultVal = lowerTol + (upperTol - lowerTol) * randomNumber
+                If decPlaces > 0 Then
+                    resultStr = Format(resultVal, "0." & String(decPlaces, "0"))
+                Else
+                    resultStr = CStr(resultVal)
+                End If
+                ' --------- START: Remove leading zero directly within text box assignment ---------
+                If decPlaces > 0 Then
+                    If Left(resultStr, 2) = "0." Then
+                        resultStr = Mid(resultStr, 2)
+                    ElseIf Left(resultStr, 3) = "-0." Then
+                        resultStr = "-" & Mid(resultStr, 3)
+                    End If
                 End If
             End If
             Me.Controls("txtItem" & idx).Text = resultStr
-             ' --------- END: Remove leading zero directly within text box assignment ---------
+            ' --------- END: Remove leading zero directly within text box assignment ---------
         Next idx
     End If
+    ' Set focus to OK button after generating numbers
+    On Error Resume Next
+    Me.Controls("btnOK").SetFocus
+    On Error GoTo 0
     Exit Sub
 ValueError:
     MsgBox "One or both input values are not valid numbers!", vbExclamation, "Input Error"
 End Sub
+'Private Sub GenRandomNumber_Click()
+'    ' Check if both textboxes are empty
+'    If Trim(Me.UpperTolerance.Text) = "" And Trim(Me.LowerTolerance.Text) = "" Then
+'        Exit Sub ' Do nothing if both empty
+'    End If
+'
+'    ' Check if ONLY one textbox has a value
+'    Dim upperTol As Double, lowerTol As Double, decPlaces As Long, resultVal As Double
+'    Dim upperDp As Long, lowerDp As Long, resultStr As String
+'
+'    On Error GoTo ValueError
+'    If Trim(Me.UpperTolerance.Text) = "" Then
+'        ' Only lower tolerance has a value
+'        lowerTol = ToNumber(Me.LowerTolerance.Text)
+'        upperTol = lowerTol
+'    ElseIf Trim(Me.LowerTolerance.Text) = "" Then
+'        ' Only upper tolerance has a value
+'        upperTol = ToNumber(Me.UpperTolerance.Text)
+'        lowerTol = upperTol
+'    Else
+'        ' Both have values, proceed as before
+'        upperTol = ToNumber(Me.UpperTolerance.Text)
+'        lowerTol = ToNumber(Me.LowerTolerance.Text)
+'    End If
+'    On Error GoTo 0
+'
+'    ' Get decimal places of input
+'    upperDp = CountDecimalPlaces(Me.UpperTolerance.Text)
+'    lowerDp = CountDecimalPlaces(Me.LowerTolerance.Text)
+'    decPlaces = IIf(upperDp > lowerDp, upperDp, lowerDp)
+'
+'    ' Ensure tolerances are valid
+'    If upperTol < lowerTol Then
+'        MsgBox "Upper Tolerance must be greater than or equal to Lower Tolerance.", vbExclamation, "Input Error"
+'        Exit Sub
+'    End If
+'
+'    ' Generate result with more precise calculations
+'    Dim idx As Long
+'    If upperTol = lowerTol Then
+'        ' Upper and lower bounds are the same, use that value
+'        resultVal = lowerTol
+'         For idx = 1 To Data_SharedValues.ItemCount
+'            If decPlaces > 0 Then
+'                 resultStr = Format(resultVal, "0." & String(decPlaces, "0"))
+'             Else
+'                resultStr = CStr(resultVal)
+'            End If
+'                Me.Controls("txtItem" & idx).Text = resultStr
+'            Next idx
+'    Else
+'        For idx = 1 To Data_SharedValues.ItemCount
+'            Randomize  ' Re-seed random number generator
+'            ' Generate a random number between 0 and 1
+'            Dim randomNumber As Double
+'            randomNumber = Rnd
+'
+'            ' Scale the random number to the range, using *more* precision.
+'            resultVal = lowerTol + (upperTol - lowerTol) * randomNumber
+'
+'             If decPlaces > 0 Then
+'                 resultStr = Format(resultVal, "0." & String(decPlaces, "0"))
+'            Else
+'                resultStr = CStr(resultVal)
+'            End If
+'
+'            Me.Controls("txtItem" & idx).Text = resultStr
+'        Next idx
+'    End If
+'    Exit Sub
+'ValueError:
+'    MsgBox "One or both input values are not valid numbers!", vbExclamation, "Input Error"
+'End Sub
