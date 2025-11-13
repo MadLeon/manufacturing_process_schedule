@@ -1,5 +1,8 @@
-' modCreateTable.bas
+' modCreateTables.bas
 Option Explicit
+
+' --- Configuration Variables ---
+Const DB_PATH As String = "\\rtdnas2\OE\jobs.db"
 
 Sub CreateCustomerFolderMapTable()
     ' Create a table for mapping customer names to G: drive folder names
@@ -8,7 +11,7 @@ Sub CreateCustomerFolderMapTable()
     '   - customer_name (TEXT): Customer name as in workbook
 
     Dim dbPath As String
-    dbPath = ThisWorkbook.Path & "\jobs.db"
+    dbPath = DB_PATH
 
     If Not InitializeSQLite(dbPath) Then Exit Sub
 
@@ -38,7 +41,7 @@ Sub CreateDrawingTable()
     
     Dim dbPath As String
     
-    dbPath = ThisWorkbook.Path & "\jobs.db"
+    dbPath = DB_PATH
     
     If Not InitializeSQLite(dbPath) Then Exit Sub
     
@@ -68,7 +71,7 @@ Sub CreateAssemblyTable()
     
     Dim dbPath As String
     
-    dbPath = ThisWorkbook.Path & "\jobs.db"
+    dbPath = DB_PATH
     
     If Not InitializeSQLite(dbPath) Then Exit Sub
     
@@ -86,5 +89,28 @@ Sub CreateAssemblyTable()
         MsgBox "Assembly information table created or already exists, initialization successful!", vbInformation
     Else
         MsgBox "Failed to create assembly table.", vbExclamation
+    End If
+End Sub
+
+' In assemblies table, add "description" column
+Sub AddDescriptionColumnToAssembliesTable()
+
+    Dim dbPath As String
+    dbPath = DB_PATH
+
+    If Not InitializeSQLite(dbPath) Then Exit Sub
+
+    Dim sqlAlter As String
+    sqlAlter = "ALTER TABLE assemblies ADD COLUMN description TEXT"
+
+    Dim result As Boolean
+    result = ExecuteNonQuery(sqlAlter)
+
+    CloseSQLite
+
+    If result Then
+        MsgBox "Successfully add description column to assemblies table!", vbInformation
+    Else
+        MsgBox "Faild to add description column to assemblies table!", vbExclamation
     End If
 End Sub

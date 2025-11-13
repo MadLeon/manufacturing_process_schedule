@@ -1,9 +1,12 @@
 Option Explicit
 
-' sync oe entry to jobs.db, then sync current workbook to jobs.db
+' --- Configuration Variables ---
+Const DB_PATH As String = "C:\Users\ee\manufacturing_process_schedule\jobs.db" ' Update with the actual network path
+Const OE_ENTRY_PATH As String = "C:\Users\ee\manufacturing_process_schedule\order entry log.xlsm" ' Update with the actual network path
 
+' sync oe entry to jobs.db, then sync current workbook to jobs.db
 Sub SyncJobsDBAndOrderEntryLog()
-    ' --- Goal: jobs.db == oeentry(DELIVERY SCHEDULE), This file (DELIVERY SCHEDULE) ≈ jobs.db ---
+    ' --- Goal: jobs.db == oeentry(DELIVERY SCHEDULE), This file (DELIVERY SCHEDULE) ˜ jobs.db ---
     Dim dbPath As String, dbHandle As LongPtr, result As Long, stmtHandle As LongPtr
     Dim jobsDBExists As Boolean
     Dim srcEntryApp As Object, srcEntryBook As Workbook, srcEntryWS As Worksheet
@@ -14,7 +17,7 @@ Sub SyncJobsDBAndOrderEntryLog()
     Dim insertSQL As String, selectSQL As String, deleteSQL As String
     Dim k As Variant
 
-    dbPath = ThisWorkbook.Path & "\jobs.db"
+    dbPath = DB_PATH
     jobsDBExists = (Dir(dbPath) <> "")
 
     ' 1. Initialize DLL
@@ -32,13 +35,13 @@ Sub SyncJobsDBAndOrderEntryLog()
     ' 3. Create table if not exists, all fields as TEXT type
     If Not jobsDBExists Then
         Dim sqlCreate As String
-    sqlCreate = "CREATE TABLE IF NOT EXISTS jobs (" & _
-        "job_id INTEGER PRIMARY KEY AUTOINCREMENT, " & _
-        "oe_number TEXT, job_number TEXT, customer_name TEXT, job_quantity TEXT, " & _
-        "part_number TEXT, revision TEXT, customer_contact TEXT, drawing_release TEXT, line_number TEXT, " & _
-        "part_description TEXT, unit_price TEXT, po_number TEXT, packing_slip TEXT, packing_quantity TEXT, " & _
-        "invoice_number TEXT, delivery_required_date TEXT, delivery_shipped_date TEXT, " & _
-        "create_timestamp TEXT DEFAULT (datetime('now','localtime')), last_modified TEXT)"
+        sqlCreate = "CREATE TABLE IF NOT EXISTS jobs (" & _
+            "job_id INTEGER PRIMARY KEY AUTOINCREMENT, " & _
+            "oe_number TEXT, job_number TEXT, customer_name TEXT, job_quantity TEXT, " & _
+            "part_number TEXT, revision TEXT, customer_contact TEXT, drawing_release TEXT, line_number TEXT, " & _
+            "part_description TEXT, unit_price TEXT, po_number TEXT, packing_slip TEXT, packing_quantity TEXT, " & _
+            "invoice_number TEXT, delivery_required_date TEXT, delivery_shipped_date TEXT, " & _
+            "create_timestamp TEXT DEFAULT (datetime('now','localtime')), last_modified TEXT)"
 
         result = SQLite3PrepareV2(dbHandle, sqlCreate, stmtHandle)
         If result = SQLITE_OK Then SQLite3Step stmtHandle: SQLite3Finalize stmtHandle
@@ -51,9 +54,9 @@ Sub SyncJobsDBAndOrderEntryLog()
     Set srcEntryApp = CreateObject("Excel.Application")
     srcEntryApp.Visible = False
     srcEntryApp.DisplayAlerts = False
-    Set srcEntryBook = srcEntryApp.Workbooks.Open(ThisWorkbook.Path & "\order entry log.xlsm", ReadOnly:=True)
+    Set srcEntryBook = srcEntryApp.Workbooks.Open(OE_ENTRY_PATH, ReadOnly:=True)
     Set srcEntryWS = srcEntryBook.Sheets("DELIVERY SCHEDULE")
-    lastRowEntry = srcEntryWS.Cells(srcEntryWS.Rows.Count, 1).End(-4162).Row
+    lastRowEntry = srcEntryWS.Cells(srcEntryWS.rows.Count, 1).End(-4162).row
     Debug.Print "Number of rows in oe entry: ", lastRowEntry - 3
 
     ' 5. Build dictionary: oeentry(Job_Number as key)
@@ -134,4 +137,3 @@ Sub SyncJobsDBAndOrderEntryLog()
     
     Debug.Print "Synchronization between oe entry and jobs.db completed!"
 End Sub
-

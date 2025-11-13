@@ -1,9 +1,12 @@
 Option Explicit
 
+' --- Configuration Variables ---
+Const DB_PATH As String = "\\rtdnas2\QCReports\jobs.db"
+
 Sub ClearCustomerFolderMapTable()
     ' Clear all content from the customer_folder_map table in jobs.db
     Dim dbPath As String
-    dbPath = ThisWorkbook.Path & "\jobs.db"
+    dbPath = DB_PATH
 
     If Not InitializeSQLite(dbPath) Then Exit Sub
 
@@ -26,7 +29,7 @@ Sub ClearAssemblyTable()
     ' Clear contents of assemblies table in jobs.db database
 
     Dim dbPath As String
-    dbPath = ThisWorkbook.Path & "\jobs.db"  ' Database file path
+    dbPath = DB_PATH  ' Database file path
 
     ' Initialize SQLite database
     If Not InitializeSQLite(dbPath) Then Exit Sub
@@ -48,7 +51,7 @@ Sub ClearDrawingNumbers()
     ' Clear drawing_number column values in drawings table
 
     Dim dbPath As String
-    dbPath = ThisWorkbook.Path & "\jobs.db"  ' Database file path
+    dbPath = DB_PATH  ' Database file path
 
     ' Initialize SQLite database
     If Not InitializeSQLite(dbPath) Then Exit Sub
