@@ -1,0 +1,6 @@
+Database structure in jobs.db
+table jobs: job_id(number), oe_number, job_number, customer_name, job_quantity, part_number, revision, customer_contact, drawing_release(date in text), line_number, part_description, unit_price, po_number, packing_slip, packing_quantity, invoice_number delivery_required_date(date in text), delivery_shipped_date(date in text), create_timestamp, last_modified
+table drawings: drawing_name, drawing_number(text), file_location
+table assemblies: part_number, drawing_number, description
+
+add col last_modified in drawings

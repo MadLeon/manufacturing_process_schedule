@@ -78,6 +78,3 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         Application.EnableEvents = True
     End If
 End Sub
-
-
-

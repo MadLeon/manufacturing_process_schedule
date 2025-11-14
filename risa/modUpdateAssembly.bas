@@ -36,7 +36,8 @@ Public Sub UpdateAssemblies()
                 If Not IsEmpty(ws.Cells(j, "E").Value) Then
                     drawing_number = ws.Cells(j, "E").Value
                     description = ws.Cells(j, "D").Value
-                    Call InsertAssemblyData(part_number, drawing_number, description)
+                    quantity = ws.Cells(j, "F").Value
+                    Call InsertAssemblyData(part_number, drawing_number, description, quantity)
                 End If
             Next j
             
@@ -48,7 +49,7 @@ Public Sub UpdateAssemblies()
     MsgBox "PrioritySheet processing complete. Data has been stored in the database.", vbInformation
 End Sub
 
-Private Sub InsertAssemblyData(part_number As String, drawing_number As String, description As String)
+Private Sub InsertAssemblyData(part_number As String, drawing_number As String, description As String, quantity As String)
     ' Subprocedure: Inserts part_number and drawing_number into "assemblies" table.
     ' Checks for existing part_number and drawing_number combination before inserting.
 
@@ -73,7 +74,7 @@ Private Sub InsertAssemblyData(part_number As String, drawing_number As String, 
 
     ' Insert if record doesn't exist
     If Not recordExists Then
-        sqlInsert = "INSERT INTO assemblies (part_number, drawing_number, description) VALUES ('" & part_number & "', '" & drawing_number & "', '" & description & "')"
+        sqlInsert = "INSERT INTO assemblies (part_number, drawing_number, description, quantity) VALUES ('" & part_number & "', '" & drawing_number & "', '" & description & "', '" & quantity & "')"
         If ExecuteNonQuery(sqlInsert) Then
             Debug.Print "Data inserted successfully: part_number = " & part_number & ", drawing_number = " & drawing_number & ", description = " & description
         Else
@@ -81,28 +82,28 @@ Private Sub InsertAssemblyData(part_number As String, drawing_number As String, 
         End If
     Else
         ' If record exists, check if description needs to be updated
-        sqlCheck = "SELECT description FROM assemblies WHERE part_number = '" & part_number & "' AND drawing_number = '" & drawing_number & "'"
-        Dim currentDescription As Variant
-        currentDescription = ExecuteSQL(sqlCheck)
+        sqlCheck = "SELECT description, quantity FROM assemblies WHERE part_number = '" & part_number & "' AND drawing_number = '" & drawing_number & "'"
+        Dim currentValues As Variant
+        currentValues = ExecuteSQL(sqlCheck)
         
-        If IsArray(currentDescription) Then
-            If UBound(currentDescription) >= 0 And UBound(currentDescription(0)) >= 0 Then
-                If IsNull(currentDescription(0)(0)) Or currentDescription(0)(0) = "" Then
-                    ' if description is empty, update it
-                    sqlUpdate = "UPDATE assemblies SET description = '" & description & "' WHERE part_number = '" & part_number & "' AND drawing_number = '" & drawing_number & "'"
+        If IsArray(currentValues) Then
+            If UBound(currentValues) >= 0 And UBound(currentValues(0)) >= 0 Then
+                If IsNull(currentValues(0)(1)) Or currentValues(0)(1) = "" Then
+                    ' if quantity is empty, update it
+                    sqlUpdate = "UPDATE assemblies SET quantity = '" & quantity & "' WHERE part_number = '" & part_number & "' AND drawing_number = '" & drawing_number & "'"
                     If ExecuteNonQuery(sqlUpdate) Then
-                        Debug.Print "Description updated successfully: part_number = " & part_number & ", drawing_number = " & drawing_number & ", description = " & description
+                        Debug.Print "Quantity updated successfully: part_number = " & part_number & ", drawing_number = " & drawing_number & ", quantity = " & quantity
                     Else
-                        Debug.Print "Error updating description"
+                        Debug.Print "Error updating quantity"
                     End If
                 Else
-                    Debug.Print "Record already exists with description: part_number = " & part_number & ", drawing_number = " & drawing_number
+                    Debug.Print "Record already exists with quantity: part_number = " & part_number & ", drawing_number = " & drawing_number
                 End If
             Else
-                Debug.Print "No description found for existing record."
+                Debug.Print "No quantity found for existing record."
             End If
         Else
-            MsgBox "Error checking for existing description."
+            MsgBox "Error checking for existing quantity."
             Exit Sub
         End If
     End If

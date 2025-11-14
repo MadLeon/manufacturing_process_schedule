@@ -1,0 +1,17 @@
+reply me in chinese
+
+add a new module. a button click can trigger it.
+
+first check if the current selected cell is in col a, and row number >=2. then check if the cell has value. exit if either condition is met.
+
+then use the value in col a - drawing_number. 
+
+then use db module:   to query in drawings table to find the file location.
+
+db structure is here:  . first try to find drawing_number in the table directly, if not, then check if the drawing number is included in drawing_name col. find all candidate rows, store them in a structure. each row has a drawing_name, file_location, and last_modified.
+
+
+
+reply me in chinese
+
+add a new similar sub with AddDescriptionColumnToAssembliesTable. to add last_modified col in drawings table.
