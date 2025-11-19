@@ -1,4 +1,4 @@
-' In modPublicData module
+' In mod_PublicData module
 Option Explicit
 
 Public lastEditedRow As Long

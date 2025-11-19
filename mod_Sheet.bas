@@ -5,7 +5,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     ' Check if the change occurred in column C
     If Target.Column = 3 Then
         ' Set the row number of the edited cell
-        modPublicData.SetLastEditedRow Target.row
+        mod_PublicData.SetLastEditedRow Target.row
         
         ' If the cell is not empty, call FindDrawingNumbers
         If Target.value <> "" Then

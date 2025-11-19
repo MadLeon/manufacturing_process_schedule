@@ -5,7 +5,7 @@ Public WithEvents Btn As MSForms.CommandButton
 
 Private Sub Btn_Click()
     Dim selectedDrawingNumber As String
-    Dim oe_number As String, po_number As String, description As String
+    Dim oe_number As String, po_number As String, part_number As String, description As String
     Dim selectedRow As Long
     Dim tagParts() As String
     Dim JobSelector As Object
@@ -18,12 +18,32 @@ Private Sub Btn_Click()
 
     oe_number = tagParts(0)
     po_number = tagParts(1)
-    description = tagParts(2)
+    part_number = tagParts(2)
     selectedRow = mod_PublicData.GetLastEditedRow() ' Get row from public data module
 
     ' Get selected drawing number from the JobSelector form
     Set JobSelector = Btn.Parent
-    selectedDrawingNumber = JobSelector.cboDrawingNumber.value
+    selectedDrawingNumber = JobSelector.cboDrawingNumber.Value
+    
+    ' Get description of the selected drawing number
+    Dim dbPath As String, sql As String, results As Variant
+    dbPath = "\\rtdnas2\OE\jobs.db"
+
+    If Not InitializeSQLite(dbPath) Then
+        MsgBox "Failed to initialize database connection.", vbCritical
+        Exit Sub
+    End If
+
+    sql = "SELECT description FROM assemblies WHERE drawing_number = '" & selectedDrawingNumber & "'"
+    results = ExecuteSQL(sql)
+
+    If Not IsNull(results) Then
+        description = results(0)(0)
+    Else
+        description = "" ' Set to empty string if description not found
+    End If
+
+    CloseSQLite
     
     ' Get the current active worksheet
     Set currentSheet = ThisWorkbook.ActiveSheet
@@ -34,10 +54,10 @@ Private Sub Btn_Click()
     ' Validate selectedRow
     If selectedRow > 0 And selectedRow <= lastRow Then
         ' Write selected drawing number and other information to Excel
-        currentSheet.Cells(selectedRow, 1).value = selectedDrawingNumber ' Column A
-        currentSheet.Cells(selectedRow, 5).value = oe_number ' Column E
-        currentSheet.Cells(selectedRow, 6).value = po_number ' Column F
-        currentSheet.Cells(selectedRow, 7).value = po_number ' Column G
+        currentSheet.Cells(selectedRow, 1).Value = selectedDrawingNumber ' Column A
+        currentSheet.Cells(selectedRow, 5).Value = oe_number ' Column E
+        currentSheet.Cells(selectedRow, 6).Value = po_number ' Column F
+        currentSheet.Cells(selectedRow, 8).Value = description ' Column G
 
         ' Construct the formula
         formula = "=IF(AND(A" & selectedRow & "=""" & """, B" & selectedRow & "=""" & """, C" & selectedRow & "=""" & """), """", A" & selectedRow & " & "" REV. "" & B" & selectedRow & " & "" @"" & C" & selectedRow & ")"
@@ -52,3 +72,4 @@ Private Sub Btn_Click()
 
     Unload JobSelector
 End Sub
+
