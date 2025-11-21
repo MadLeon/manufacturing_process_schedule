@@ -57,13 +57,16 @@ Private Sub Btn_Click()
         currentSheet.Cells(selectedRow, 1).Value = selectedDrawingNumber ' Column A
         currentSheet.Cells(selectedRow, 5).Value = oe_number ' Column E
         currentSheet.Cells(selectedRow, 6).Value = po_number ' Column F
-        currentSheet.Cells(selectedRow, 8).Value = description ' Column G
+        currentSheet.Cells(selectedRow, 7).Value = UCase(description) ' Column G
 
         ' Construct the formula
         formula = "=IF(AND(A" & selectedRow & "=""" & """, B" & selectedRow & "=""" & """, C" & selectedRow & "=""" & """), """", A" & selectedRow & " & "" REV. "" & B" & selectedRow & " & "" @"" & C" & selectedRow & ")"
 
         ' Apply the formula to column D
         currentSheet.Cells(selectedRow, 4).formula = formula
+
+        ' Add hyperlink to the drawing number in column A
+        mod_CreateHyperlinkes.CreateSingleHyperlink currentSheet.Cells(selectedRow, 1)
 
     Else
         Debug.Print "Error: selectedRow (" & selectedRow & ") is out of valid range (1 to " & lastRow & ")."
