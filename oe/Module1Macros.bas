@@ -1,26 +1,29 @@
-Attribute VB_Name = "Module1Macros"
 Sub NewJOB()
-'Find the very last used cell in a Column:
-Application.ScreenUpdating = False
-Sheets("DELIVERY SCHEDULE").Select
-Range("b65536").End(xlUp).Select
-ActiveCell.Copy
-Sheets("Input Form").Select
-Range("g7").PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks:= _
-        False, Transpose:=True
-
+    Application.ScreenUpdating = False
+    
+    With Sheets("DELIVERY SCHEDULE")
+        Dim lastValue As Variant
+        lastValue = .Range("B65536").End(xlUp).Value
+    End With
+    
+    With Sheets("Input Form")
+        .Range("G7").Value = lastValue
+    End With
+    
+    Application.ScreenUpdating = True
 End Sub
+
 Sub NewOE()
 'Find the very last used cell in a Column:
-Application.ScreenUpdating = False
-Sheets("DELIVERY SCHEDULE").Select
-Range("a65536").End(xlUp).Select
-ActiveCell.Copy
-Sheets("Input Form").Select
-Range("g5").PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks:= _
-        False, Transpose:=True
-    ' Clear data fields and reset the form
-    With InputForm
+    Application.ScreenUpdating = False
+    
+    With Sheets("DELIVERY SCHEDULE")
+        Dim lastValue As Variant
+        lastValue = .Range("A65536").End(xlUp).Value
+    End With
+    
+    With Sheets("Input Form")
+        .Range("G5").Value = lastValue
         '.Range("OE").Value = ""
         '.Range("JobNum").Value = ""
         .Range("Customer").Value = ""
@@ -36,155 +39,71 @@ Range("g5").PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks:= _
         .Range("OE").Select
     End With
 
-
+    Application.ScreenUpdating = True
 End Sub
+
 Sub OpenInputForm()
-    With InputForm
+    With Sheets("Input Form")
         .Activate
         .Range("OE").Select
     End With
     Call NewJOB
     Call NewOE
+End Sub
+
+Sub AddNextNewRecord()
+    Dim vNewRow As Long
+    ' Find the first empty row in the data table
+    vNewRow = Sheets("DELIVERY SCHEDULE").Cells(Rows.Count, 1).End(xlUp).Offset(1, 0).row
+    
+    ' Check for data in OE field
+    If Trim(Range("OE").Value) = "" Then
+        Range("OE").Activate
+        MsgBox "Please enter data in OE!"
+        Exit Sub
+    End If
+
+    ' Copy the data to the data table
+    With Sheets("DELIVERY SCHEDULE")
+        .Cells(vNewRow, 1).Value = Range("OE").Value
+        .Cells(vNewRow, 2).Value = Range("JobNum").Value
+        .Cells(vNewRow, 3).Value = Range("Customer").Value
+        .Cells(vNewRow, 5).Value = Range("Parts").Value
+        .Cells(vNewRow, 6).Value = Range("revision").Value
+        .Cells(vNewRow, 10).Value = Range("desc").Value
+        .Cells(vNewRow, 4).Value = Range("qty").Value
+        .Cells(vNewRow, 16).Value = Range("date").Value
+        .Cells(vNewRow, 7).Value = Range("contact").Value
+        .Cells(vNewRow, 12).Value = Range("po").Value
+        .Cells(vNewRow, 9).Value = Range("poline").Value
+        .Cells(vNewRow, 11).Value = Range("price").Value
+        .Cells(vNewRow, 8).Value = Range("od").Value
+    End With
+
+    'Insert hyperlink for the part number
+    Call AddHyperlink(vNewRow)
+
+   Application.OnTime Now + TimeValue("00:02:00"), "SaveWB"
+
+    ' Clear data fields and reset the form
+    With InputForm
+        .Range("Parts").Value = ""
+        .Range("Revision").Value = ""
+        .Range("desc").Value = ""
+        .Range("qty").Value = ""
+        .Range("date").Value = ""
+        .Range("poline").Value = ""
+        .Range("price").Value = ""
+        .Range("OE").Select
+    End With
+
+   Call NewJOB
 
 End Sub
-Sub AddNewRecord()
-Dim vNewRow As Long
-    ' Find the first empty row in the data table
-    'vNewRow = DELIVERY SCHEDULE.Cells(Rows.Count, 1).End(xlUp).Offset(1, 0).Row
-    
-    vNewRow = Sheets("DELIVERY SCHEDULE").Cells(Rows.Count, 1).End(xlUp).Offset(1, 0).row
-    
-    ' Check for data in Field 1
-    If Trim(Range("OE").Value) = "" Then
-        Range("OE").Activate
-        MsgBox "Please enter data in OE!"
-        Exit Sub
-    End If
-    ' Check for data in Field 2
-   ' If Trim(Range("JobNum").Value) = "" Then
-    '    Range("JobNum").Activate
-     '   MsgBox "Please enter data in Field 2!"
-      '  Exit Sub
-   ' End If
-    ' Check for data in Field 3
-   ' If Trim(Range("Customer").Value) = "" Then
-   '     Range("Customer").Activate
-    '    MsgBox "Please enter data in Field 3!"
-     '   Exit Sub
-  '  End If
-    ' Copy the data to the data table
-    With SCHEDULE
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 1).Value = Range("OE").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 2).Value = Range("JobNum").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 3).Value = Range("Customer").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 5).Value = Range("Parts").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 6).Value = Range("revision").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 10).Value = Range("desc").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 4).Value = Range("qty").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 16).Value = Range("date").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 7).Value = Range("contact").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 12).Value = Range("po").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 9).Value = Range("poline").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 11).Value = Range("price").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 8).Value = Range("od").Value
-        ActiveWorkbook.Save
-     End With
-    ' Clear data fields and reset the form
-    With InputForm
-        '.Range("OE").Value = ""
-        '.Range("JobNum").Value = ""
-        '.Range("Customer").Value = ""
-        .Range("Parts").Value = ""
-        .Range("Revision").Value = ""
-        .Range("desc").Value = ""
-        .Range("qty").Value = ""
-        .Range("date").Value = ""
-        '.Range("contact").Value = ""
-        '.Range("po").Value = ""
-        .Range("poline").Value = ""
-        .Range("price").Value = ""
-        .Range("OE").Select
-    End With
-   Call NewJOB
-   
-   ' With Sheets("DELIVERY SCHEDULE")
-    '    .Activate
-     '   .Cells(vNewRow, 1).Select
-  '  End With
-End Sub
-Sub AddNextNewRecord()
-Dim vNewRow As Long
-    ' Find the first empty row in the data table
-    'vNewRow = DELIVERY SCHEDULE.Cells(Rows.Count, 1).End(xlUp).Offset(1, 0).Row
-    
-    vNewRow = Sheets("DELIVERY SCHEDULE").Cells(Rows.Count, 1).End(xlUp).Offset(1, 0).row
-    
-    ' Check for data in Field 1
-    If Trim(Range("OE").Value) = "" Then
-        Range("OE").Activate
-        MsgBox "Please enter data in OE!"
-        Exit Sub
-    End If
-    ' Check for data in Field 2
-   ' If Trim(Range("JobNum").Value) = "" Then
-    '    Range("JobNum").Activate
-     '   MsgBox "Please enter data in Field 2!"
-      '  Exit Sub
-   ' End If
-    ' Check for data in Field 3
-   ' If Trim(Range("Customer").Value) = "" Then
-   '     Range("Customer").Activate
-    '    MsgBox "Please enter data in Field 3!"
-     '   Exit Sub
-  '  End If
-    ' Copy the data to the data table
-    With SCHEDULE
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 1).Value = Range("OE").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 2).Value = Range("JobNum").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 3).Value = Range("Customer").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 5).Value = Range("Parts").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 6).Value = Range("revision").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 10).Value = Range("desc").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 4).Value = Range("qty").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 16).Value = Range("date").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 7).Value = Range("contact").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 12).Value = Range("po").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 9).Value = Range("poline").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 11).Value = Range("price").Value
-        Sheets("DELIVERY SCHEDULE").Cells(vNewRow, 8).Value = Range("od").Value
-        
-        Application.OnTime Now + TimeValue("00:02:00"), "SaveWB"
-        
-        
-     End With
-    ' Clear data fields and reset the form
-    With InputForm
-        '.Range("OE").Value = ""
-        '.Range("JobNum").Value = ""
-        '.Range("Customer").Value = ""
-        .Range("Parts").Value = ""
-        .Range("Revision").Value = ""
-        .Range("desc").Value = ""
-        .Range("qty").Value = ""
-        .Range("date").Value = ""
-        '.Range("contact").Value = ""
-        '.Range("po").Value = ""
-        .Range("poline").Value = ""
-        .Range("price").Value = ""
-        .Range("OE").Select
-    End With
-   Call NewJOB
-   
-   ' With Sheets("DELIVERY SCHEDULE")
-    '    .Activate
-     '   .Cells(vNewRow, 1).Select
-  '  End With
-End Sub
+
 Sub Cancel()
     ' Clear data fields and reset the form
-    With InputForm
-        '.Range("OE").Value = ""
-        '.Range("JobNum").Value = ""
+    With Sheets("Input Form")
         .Range("Customer").Value = ""
         .Range("Parts").Value = ""
         .Range("Revision").Value = ""
@@ -196,30 +115,31 @@ Sub Cancel()
         .Range("poline").Value = ""
         .Range("price").Value = ""
         .Range("OE").Select
-
     End With
+    
     Sheets("DELIVERY SCHEDULE").Activate
 End Sub
+
 Sub PreNum()
-'Find the very last used cell in a Column:
-Application.ScreenUpdating = False
-Sheets("DELIVERY SCHEDULE").Select
-Range("b65536").End(xlUp).Select
-ActiveCell.Copy
-Sheets("Input Form").Select
-Range("h7").PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks:= _
-        False, Transpose:=True
-Range("j7").Copy
-Range("g7").PasteSpecial Paste:=xlPasteValues, Operation:=xlNone, SkipBlanks:= _
-        False, Transpose:=True
-Application.SendKeys "{esc}"
+    Application.ScreenUpdating = False
 
+    ' Find the very last used cell in a Column
+    With Sheets("DELIVERY SCHEDULE")
+        Dim lastValueB As Variant
+        lastValueB = .Range("B65536").End(xlUp).Value
+    End With
 
-Range("e9").Select
+    With Sheets("Input Form")
+        Dim lastValueJ As Variant
+        lastValueJ = .Range("J7").Value ' Corrected to read from Input Form
+        .Range("H7").Value = lastValueB
+        .Range("G7").Value = lastValueJ
+        .Range("E9").Select
+    End With
 
-
+    Application.ScreenUpdating = True
 End Sub
 
 Sub SaveTheWork()
-        ActiveWorkbook.Save
+    ActiveWorkbook.Save
 End Sub

@@ -114,3 +114,25 @@ Sub AddDescriptionColumnToAssembliesTable()
         MsgBox "Faild to add description column to assemblies table!", vbExclamation
     End If
 End Sub
+
+Sub AddLineNumberColumnToJobsTable()
+
+    Dim dbPath As String
+    dbPath = DB_PATH
+
+    If Not InitializeSQLite(dbPath) Then Exit Sub
+
+    Dim sqlAlter As String
+    sqlAlter = "ALTER TABLE jobs ADD COLUMN line_number INTEGER DEFAULT 1;"
+
+    Dim result As Boolean
+    result = ExecuteNonQuery(sqlAlter)
+
+    CloseSQLite
+
+    If result Then
+        MsgBox "Successfully add line_number column to jobs table!", vbInformation
+    Else
+        MsgBox "Faild to add line_number column to jobs table!", vbExclamation
+    End If
+End Sub
