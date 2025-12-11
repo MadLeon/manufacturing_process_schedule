@@ -15,6 +15,7 @@ Sub AddNewJobToDB()
     Dim Revision As String, Customer_Contact As String, Drawing_Release As String, Line_Number As String, Part_Description As String
     Dim Unit_Price As String, PO_Number As String, Packing_Slip As String, Packing_Quantity As String, Invoice_Number As String
     Dim Delivery_Required_Date As String, Delivery_Shipped_Date As String
+    Dim rs As Variant
 
     ' 1. Set object variables
     Set curBook = ThisWorkbook
@@ -52,60 +53,65 @@ Sub AddNewJobToDB()
     ' 5. Build dictionary of current Job_Number in delivery schedule
     Set jobDict = CreateObject("Scripting.Dictionary")
     lastRowDelivery = LastRow(deliveryWS)
-    Debug.Print "Last row in delivery schedule: " & lastRowDelivery
+    
+        For r = 4 To lastRowDelivery
+        Dim jn As String, ln As String, dr As String
+        jn = Trim(deliveryWS.Cells(r, 2).Value)   ' Job_Number
+        ln = Trim(deliveryWS.Cells(r, 9).Value)   ' Line_Number
+        dr = Trim(deliveryWS.Cells(r, 16).Value)  ' Delivery_Required_Date
 
+        If jn <> "" Then
+            Dim compositeKey As String
+            compositeKey = jn & "|" & ln & "|" & dr
+            jobDict(compositeKey) = r
+        End If
+    Next r
+
+    Debug.Print "Number of unique job entries: "; jobDict.Count
+    
     ' 6. Insert new job into jobs table
-    ' Check if the record exists in the db already (Job_Number, Line_Number, Delivery_Required_Date)
-    checkSQL = "SELECT COUNT(*) FROM jobs WHERE Job_Number = '" & Replace(Job_Number, "'", "''") & "' AND " & _
-              "Line_Number = '" & Replace(Line_Number, "'", "''") & "' AND Delivery_Required_Date = '" & Replace(Delivery_Required_Date, "'", "''") & "'"
+    ' Generate the unique key
+    Dim Unique_Key As String
+    Unique_Key = Job_Number & "|" & Line_Number & "|" & Delivery_Required_Date
 
-    rs = ExecuteSQL(checkSQL)
-    If Not IsEmpty(rs) Then
-       If rs(0)(0) > 0 Then
-           MsgBox "A record with the same Job Number, Line Number, and Delivery Required Date already exists.", vbCritical
-           CloseSQLite
-           Exit Sub
-       End If
+    insertSQL = "INSERT INTO jobs (OE_Number, Job_Number, Customer_Name, Job_Quantity, Part_Number, Revision, Customer_Contact, " & _
+                "Drawing_Release, Line_Number, Part_Description, Unit_Price, PO_Number, Delivery_Required_Date, unique_key, " & _
+                "create_timestamp, last_modified) " & _
+                "VALUES ('" & Replace(OE_Number, "'", "''") & "', '" & Replace(Job_Number, "'", "''") & "', '" & Replace(Customer_Name, "'", "''") & "', '" & _
+                Replace(Job_Quantity, "'", "''") & "', '" & Replace(Part_Number, "'", "''") & "', '" & Replace(Revision, "'", "''") & "', '" & _
+                Replace(Customer_Contact, "'", "''") & "', '" & Replace(Drawing_Release, "'", "''") & "', '" & Replace(Line_Number, "'", "''") & "', '" & _
+                Replace(Part_Description, "'", "''") & "', '" & Replace(Unit_Price, "'", "''") & "', '" & Replace(PO_Number, "'", "''") & "', '" & _
+                Replace(Delivery_Required_Date, "'", "''") & "', '" & Replace(Unique_Key, "'", "''") & "', datetime('now','localtime'), datetime('now','localtime'))"
+
+    If ExecuteNonQuery(insertSQL) Then
+       Debug.Print "New job added to jobs table: " & Job_Number
+    Else
+       Debug.Print "Failed to add new job to jobs table: " & Job_Number
     End If
 
-    'insertSQL = "INSERT INTO jobs (OE_Number, Job_Number, Customer_Name, Job_Quantity, Part_Number, Revision, Customer_Contact, " & _
-    '          "Drawing_Release, Line_Number, Part_Description, Unit_Price, PO_Number, Delivery_Required_Date, " & _
-    '          "create_timestamp, last_modified) " & _
-    '          "VALUES ('" & Replace(OE_Number, "'", "''") & "', '" & Replace(Job_Number, "'", "''") & "', '" & Replace(Customer_Name, "'", "''") & "', '" & _
-    '          Replace(Job_Quantity, "'", "''") & "', '" & Replace(Part_Number, "'", "''") & "', '" & Replace(Revision, "'", "''") & "', '" & _
-    '          Replace(Customer_Contact, "'", "''") & "', '" & Replace(Drawing_Release, "'", "''") & "', '" & Replace(Line_Number, "'", "''") & "', '" & _
-    '          Replace(Part_Description, "'", "''") & "', '" & Replace(Unit_Price, "'", "''") & "', '" & Replace(PO_Number, "'", "''") & "', '" & _
-    '          Replace(Delivery_Required_Date, "'", "''") & "', datetime('now','localtime'), datetime('now','localtime'))"
-
-    'If ExecuteNonQuery(insertSQL) Then
-    '    Debug.Print "New job added to jobs table: " & Job_Number
-    '    MsgBox "New job added to database successfully!", vbInformation
-    'Else
-    '    Debug.Print "Failed to add new job to jobs table: " & Job_Number
-    '    MsgBox "Failed to add new job to database. Check the debug log for details.", vbCritical
-    'End If
+    On Error GoTo 0
 
     ' 7. Check for completed jobs (exists in DB but not in delivery schedule) and move to job_history
-    'Dim jobHistoryExists As Boolean
-    'jobHistoryExists = TableExists("job_history")
+    Dim jobHistoryExists As Boolean
+    jobHistoryExists = TableExists("job_history")
 
-    'If Not jobHistoryExists Then
-    '    ' Create job_history table if it doesn't exist
-    '    Dim sqlCreateHistory As String
-    '    sqlCreateHistory = "CREATE TABLE IF NOT EXISTS job_history (" & _
-    '                       "job_id INTEGER PRIMARY KEY AUTOINCREMENT, " & _
-    '                       "oe_number TEXT, job_number TEXT, customer_name TEXT, job_quantity TEXT, " & _
-    '                       "part_number TEXT, revision TEXT, customer_contact TEXT, drawing_release TEXT, line_number TEXT, " & _
-    '                       "part_description TEXT, unit_price TEXT, po_number TEXT, packing_slip TEXT, packing_quantity TEXT, " & _
-    '                       "invoice_number TEXT, delivery_required_date TEXT, delivery_shipped_date TEXT, " & _
-    '                       "create_timestamp TEXT, last_modified TEXT, completed_timestamp TEXT DEFAULT (datetime('now','localtime')))"
-    '    If Not ExecuteNonQuery(sqlCreateHistory) Then
-    '        MsgBox "Failed to create job_history table. Check debug log.", vbCritical
-    '        CloseSQLite
-    '        Exit Sub
-    '    End If
-    '    Debug.Print "job_history table created"
-    'End If
+    If Not jobHistoryExists Then
+        ' Create job_history table if it doesn't exist
+        Dim sqlCreateHistory As String
+        sqlCreateHistory = "CREATE TABLE IF NOT EXISTS job_history (" & _
+                           "job_id INTEGER PRIMARY KEY AUTOINCREMENT, " & _
+                           "oe_number TEXT, job_number TEXT, customer_name TEXT, job_quantity TEXT, " & _
+                           "part_number TEXT, revision TEXT, customer_contact TEXT, drawing_release TEXT, line_number TEXT, " & _
+                           "part_description TEXT, unit_price TEXT, po_number TEXT, packing_slip TEXT, packing_quantity TEXT, " & _
+                           "invoice_number TEXT, delivery_required_date TEXT, delivery_shipped_date TEXT, " & _
+                           "create_timestamp TEXT, last_modified TEXT, completed_timestamp TEXT DEFAULT (datetime('now','localtime')))"
+        If Not ExecuteNonQuery(sqlCreateHistory) Then
+            MsgBox "Failed to create job_history table. Check debug log.", vbCritical
+            CloseSQLite
+            Exit Sub
+        End If
+        Debug.Print "job_history table created"
+    End If
     
     ' 8. Move completed jobs to job_history and delete from jobs
     'Dim rs As Variant, jobID As Long
@@ -174,10 +180,20 @@ Sub AddNewJobToDB()
     
     ' 9. Close SQLite
     CloseSQLite
+    Exit Sub
     
     'Debug.Print "AddNewJobToDB completed!"
 
+HandleDuplicate:
+    If Err.Number <> 0 Then
+        Debug.Print "A record with the same Job Number, Line Number, and Delivery Required Date already exists.", vbExclamation
+        Err.Clear
+    End If
+    CloseSQLite
+    Exit Sub
+
 End Sub
+
 
 ' Helper function to get the last row with data in a worksheet
 Function LastRow(ws As Worksheet) As Long

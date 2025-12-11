@@ -135,35 +135,46 @@ End Function
 
 ' Execute non-query SQL statement (INSERT, UPDATE, DELETE)
 Public Function ExecuteNonQuery(sql As String) As Boolean
+    Dim stmtHandle As LongPtr
+    Dim result As Long
+    Dim prepareSuccess As Boolean
+
+    ExecuteNonQuery = False  ' default: fail
 
     If Not thisDB.initialized Then
-    Debug.Print "SQLite is not initialized."
-        ExecuteNonQuery = False
+        Debug.Print "SQLite is not initialized."
         Exit Function
     End If
 
-    Dim stmtHandle As LongPtr, result As Long
-
+    ' -------------------------
     ' 1. Prepare SQL statement
+    ' -------------------------
     result = SQLite3PrepareV2(thisDB.dbHandle, sql, stmtHandle)
     If result <> SQLITE_OK Then
-    Debug.Print "Error preparing SQL statement: " & SQLite3ErrMsg(thisDB.dbHandle)
-        ExecuteNonQuery = False
-        Exit Function
+        Debug.Print "Error preparing SQL: " & SQLite3ErrMsg(thisDB.dbHandle)
+        GoTo CleanExit     ' still need finalize
     End If
+    prepareSuccess = True
 
+    ' -------------------------
     ' 2. Execute statement
+    ' -------------------------
     result = SQLite3Step(stmtHandle)
     If result <> SQLITE_DONE Then
-    Debug.Print "Error executing SQL statement: " & SQLite3ErrMsg(thisDB.dbHandle)
-        ExecuteNonQuery = False
-        Exit Function
+        Debug.Print "Error executing SQL: " & SQLite3ErrMsg(thisDB.dbHandle)
+        GoTo CleanExit
     End If
 
-    ' 3. Finalize statement
-    SQLite3Finalize stmtHandle
-
+    ' success
     ExecuteNonQuery = True
+
+CleanExit:
+    ' -------------------------
+    ' 3. Finalize (ALWAYS)
+    ' -------------------------
+    If prepareSuccess Then
+        SQLite3Finalize stmtHandle
+    End If
 
 End Function
 
