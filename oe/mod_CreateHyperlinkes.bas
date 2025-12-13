@@ -74,8 +74,8 @@ Function FindDrawingLocation(drawingNumber As String, customerName As String)
         updateSQL = "UPDATE drawings SET drawing_number = '" & drawingNumber & "' WHERE drawing_name = '" & drawingName & "'"
         If Not mod_SQLite.ExecuteNonQuery(updateSQL) Then
         Debug.Print "Error updating drawing number"
-        End If    
-    End If    
+        End If
+    End If
 
     If fileLocation <> "" Then
         Debug.Print "File location for " & drawingNumber & ": " & fileLocation
@@ -93,7 +93,7 @@ Sub AddHyperlink(row As Long)
     Dim cell As Variant
 
     Set cell = Sheets("DELIVERY SCHEDULE").Cells(row, 5)
-    customerName = Sheets("DELIVERY SCHEDULE").Cells(row, 3).value
+    customerName = Sheets("DELIVERY SCHEDULE").Cells(row, 3).Value
 
     drawingNumber = Trim(cell.Value)
     If drawingNumber = "" Then
@@ -217,5 +217,4 @@ Sub CreateHyperlinks()
     ' 5. Clean up
     mod_SQLite.CloseSQLite
     Set eCells = Nothing
-    MsgBox "Hyperlinks created successfully!", vbInformation
 End Sub

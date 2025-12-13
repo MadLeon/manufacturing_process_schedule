@@ -1,5 +1,9 @@
-1. add a 人工唯一键 to the table.
-ALTER TABLE jobs ADD COLUMN unique_key TEXT;
-UPDATE jobs
-SET unique_key = Job_Number || '|' || Line_Number || '|' || Delivery_Required_Date;
-CREATE UNIQUE INDEX idx_unique_key ON jobs(unique_key);
+1. add a artificial unique key to the table, then update all value of that field
+  ALTER TABLE jobs ADD COLUMN unique_key TEXT;
+  UPDATE jobs
+  SET unique_key = Job_Number || '|' || Line_Number;
+  CREATE UNIQUE INDEX idx_unique_key ON jobs(unique_key);
+
+2. run CreateJobHistoryTable to add job_history for the database.
+
+3. sync the table with OE Entry

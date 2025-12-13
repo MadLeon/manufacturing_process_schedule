@@ -55,14 +55,13 @@ Sub AddNewJobToDB()
     lastRowDelivery = LastRow(deliveryWS)
     
         For r = 4 To lastRowDelivery
-        Dim jn As String, ln As String, dr As String
+        Dim jn As String, ln As String
         jn = Trim(deliveryWS.Cells(r, 2).Value)   ' Job_Number
         ln = Trim(deliveryWS.Cells(r, 9).Value)   ' Line_Number
-        dr = Trim(deliveryWS.Cells(r, 16).Value)  ' Delivery_Required_Date
 
         If jn <> "" Then
             Dim compositeKey As String
-            compositeKey = jn & "|" & ln & "|" & dr
+            compositeKey = jn & "|" & ln
             jobDict(compositeKey) = r
         End If
     Next r
@@ -72,7 +71,7 @@ Sub AddNewJobToDB()
     ' 6. Insert new job into jobs table
     ' Generate the unique key
     Dim Unique_Key As String
-    Unique_Key = Job_Number & "|" & Line_Number & "|" & Delivery_Required_Date
+    Unique_Key = Job_Number & "|" & Line_Number
 
     insertSQL = "INSERT INTO jobs (OE_Number, Job_Number, Customer_Name, Job_Quantity, Part_Number, Revision, Customer_Contact, " & _
                 "Drawing_Release, Line_Number, Part_Description, Unit_Price, PO_Number, Delivery_Required_Date, unique_key, " & _
@@ -90,93 +89,6 @@ Sub AddNewJobToDB()
     End If
 
     On Error GoTo 0
-
-    ' 7. Check for completed jobs (exists in DB but not in delivery schedule) and move to job_history
-    Dim jobHistoryExists As Boolean
-    jobHistoryExists = TableExists("job_history")
-
-    If Not jobHistoryExists Then
-        ' Create job_history table if it doesn't exist
-        Dim sqlCreateHistory As String
-        sqlCreateHistory = "CREATE TABLE IF NOT EXISTS job_history (" & _
-                           "job_id INTEGER PRIMARY KEY AUTOINCREMENT, " & _
-                           "oe_number TEXT, job_number TEXT, customer_name TEXT, job_quantity TEXT, " & _
-                           "part_number TEXT, revision TEXT, customer_contact TEXT, drawing_release TEXT, line_number TEXT, " & _
-                           "part_description TEXT, unit_price TEXT, po_number TEXT, packing_slip TEXT, packing_quantity TEXT, " & _
-                           "invoice_number TEXT, delivery_required_date TEXT, delivery_shipped_date TEXT, " & _
-                           "create_timestamp TEXT, last_modified TEXT, completed_timestamp TEXT DEFAULT (datetime('now','localtime')))"
-        If Not ExecuteNonQuery(sqlCreateHistory) Then
-            MsgBox "Failed to create job_history table. Check debug log.", vbCritical
-            CloseSQLite
-            Exit Sub
-        End If
-        Debug.Print "job_history table created"
-    End If
-    
-    ' 8. Move completed jobs to job_history and delete from jobs
-    'Dim rs As Variant, jobID As Long
-    'checkSQL = "SELECT job_id, OE_Number, Job_Number, Customer_Name, Job_Quantity, Part_Number, Revision, Customer_Contact, " & _
-    '           "Drawing_Release, Line_Number, Part_Description, Unit_Price, PO_Number, Packing_Slip, Packing_Quantity, Invoice_Number, Delivery_Required_Date, Delivery_Shipped_Date, " & _
-    '           "create_timestamp, last_modified FROM jobs"
-
-    'rs = ExecuteSQL(checkSQL)
-    'If Not IsEmpty(rs) Then
-    '    For r = LBound(rs) To UBound(rs)
-    '        Dim jobNumber As String, lineNumber As String, deliveryDate As String
-    '        jobNumber = rs(r)(2)
-    '        lineNumber = rs(r)(9)
-    '        deliveryDate = rs(r)(16)
-
-    '        ' Check if the job exists in DELIVERY SCHEDULE with the same Job_Number, Line_Number, and Delivery_Required_Date
-    '        Dim foundInDeliverySchedule As Boolean
-    '        foundInDeliverySchedule = False
-
-    '        If jobDict.Exists(jobNumber) Then
-    '            ' Check Line_Number and Delivery_Required_Date
-    '            If Trim(deliveryWS.Cells(jobDict(jobNumber), 9).Value) = lineNumber And Trim(deliveryWS.Cells(jobDict(jobNumber), 16).Value) = deliveryDate Then
-    '                foundInDeliverySchedule = True
-    '            End If
-    '        End If
-
-    '        If Not foundInDeliverySchedule Then
-    '            jobID = rs(r)(0)
-    '            OE_Number = rs(r)(1)
-    '            Job_Number = rs(r)(2)
-    '            Customer_Name = rs(r)(3)
-    '            Job_Quantity = rs(r)(4)
-    '            Part_Number = rs(r)(5)
-    '            Revision = rs(r)(6)
-    '            Customer_Contact = rs(r)(7)
-    '            Drawing_Release = rs(r)(8)
-    '            Line_Number = rs(r)(9)
-    '            Part_Description = rs(r)(10)
-    '            Unit_Price = rs(r)(11)
-    '            PO_Number = rs(r)(12)
-    '            Delivery_Required_Date = rs(r)(16)
-                    
-    '        historyInsertSQL = "INSERT INTO job_history (OE_Number, Job_Number, Customer_Name, Job_Quantity, Part_Number, Revision, Customer_Contact, " & _
-    '                            "Drawing_Release, Line_Number, Part_Description, Unit_Price, PO_Number, Delivery_Required_Date, " & _
-    '                            "create_timestamp, last_modified) VALUES ('" & Replace(OE_Number, "'", "''") & "', '" & Replace(Job_Number, "'", "''") & "', '" & Replace(Customer_Name, "'", "''") & "', '" & _
-    '                            Replace(Job_Quantity, "'", "''") & "', '" & Replace(Part_Number, "'", "''") & "', '" & Replace(Revision, "'", "''") & "', '" & _
-    '                            Replace(Customer_Contact, "'", "''") & "', '" & Replace(Drawing_Release, "'", "''") & "', '" & Replace(Line_Number, "'", "''") & "', '" & _
-    '                            Replace(Part_Description, "'", "''") & "', '" & Replace(Unit_Price, "'", "''") & "', '" & Replace(PO_Number, "'", "''") & "', '" & _
-    '                            Replace(Delivery_Required_Date, "'", "''") & "', '" & rs(r)(18) & "', '" & rs(r)(19) & "')" ' Use existing timestamps
-
-    '        If ExecuteNonQuery(historyInsertSQL) Then
-    '            Debug.Print "Job moved to job_history: " & Job_Number
-    '            'Now delete from jobs table
-    '            deleteSQL = "DELETE FROM jobs WHERE job_id = " & jobID
-    '            If ExecuteNonQuery(deleteSQL) Then
-    '                Debug.Print "Job deleted from jobs table: " & Job_Number
-    '            Else
-    '                Debug.Print "Failed to delete job from jobs table: " & Job_Number
-    '            End If
-    '        Else
-    '            Debug.Print "Failed to move job to job_history: " & Job_Number
-    '        End If
-    '    End If
-    'Next r
-    'End If
     
     ' 9. Close SQLite
     CloseSQLite
@@ -194,7 +106,6 @@ HandleDuplicate:
 
 End Sub
 
-
 ' Helper function to get the last row with data in a worksheet
 Function LastRow(ws As Worksheet) As Long
     LastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).row
@@ -207,4 +118,3 @@ Function TableExists(tableName As String) As Boolean
     rs = ExecuteSQL(sql)
     TableExists = Not IsEmpty(rs)
 End Function
-
