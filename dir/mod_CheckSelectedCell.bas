@@ -9,6 +9,8 @@ Sub CheckSelectedCell()
     sourceFilePath = "C:\Users\ee\Desktop\Dir History\" & sourceFileName
     Dim dirHistoryPath As String
     dirHistoryPath = "C:\Users\ee\Desktop\Dir History\"
+    Dim destBasePath As String
+    Dim colHValue As Variant
 
     ' --- Check if a cell is selected ---
     If TypeName(Selection) <> "Range" Then
@@ -19,11 +21,33 @@ Sub CheckSelectedCell()
     ' Get the selected range
     Set rng = Selection
 
-    ' --- Check if the selected cell is in column D and has a value ---
-    If rng.Column = 4 And Not IsEmpty(rng.value) Then  ' Column D is column 4
+    ' --- Get the value from column D and H in the selected row ---
+    Dim colDValue As Variant
+    colDValue = ThisWorkbook.ActiveSheet.Cells(rng.Row, 4).Value  ' Column D (column 4)
+    colHValue = ThisWorkbook.ActiveSheet.Cells(rng.Row, 8).Value  ' Column H (column 8)
+    
+    If Not IsEmpty(colDValue) Then  ' Check if column D has a value
+
+        ' --- Determine destination base path based on column H value ---
+        If IsEmpty(colHValue) Then
+            MsgBox "Customer (Column H) is empty", vbExclamation, "Warning"
+            Exit Sub
+        End If
+        
+        Select Case CStr(colHValue)
+            Case "Candu"
+                destBasePath = "\\rtdnas2\QCReports\FINAL REPORTS\CANDU  ENERGY"
+            Case "ATS"
+                destBasePath = "\\rtdnas2\QCReports\FINAL REPORTS\ATS  Energy"
+            Case "Kinectrics"
+                destBasePath = "\\rtdnas2\QCReports\FINAL REPORTS\KINECTRICS INC"
+            Case Else
+                destBasePath = "\\rtdnas2\QCReports\FINAL REPORTS\CANDU  ENERGY"
+                MsgBox "Unknown customer value: " & colHValue & vbNewLine & "Defaulting to CANDU ENERGY", vbExclamation, "Warning"
+        End Select
 
         ' --- Build Destination File Path ---
-        destFilePath = dirHistoryPath & "\" & rng.value & ".xlsm"  ' Copy name
+        destFilePath = destBasePath & "\" & colDValue & ".xlsm"  ' Copy name
 
         ' --- Copy the source file ---
         On Error Resume Next
@@ -39,18 +63,22 @@ Sub CheckSelectedCell()
         End If
 
         ' --- Get values from *current active sheet* ---
-        colEValue = ThisWorkbook.ActiveSheet.Cells(rng.row, 5).value  ' Column E
-        colFValue = ThisWorkbook.ActiveSheet.Cells(rng.row, 6).value  ' Column F
-
-        Debug.Print "colEValue = " & colEValue
-        Debug.Print "colFValue = " & colFValue
+        colEValue = ThisWorkbook.ActiveSheet.Cells(rng.row, 5).Value  ' Column E
+        colFValue = ThisWorkbook.ActiveSheet.Cells(rng.row, 6).Value  ' Column F
+        colGValue = ThisWorkbook.ActiveSheet.Cells(rng.row, 7).Value  ' Column G
+        Dim colAValue As Variant, colBValue As Variant, colCValue As Variant
+        colAValue = ThisWorkbook.ActiveSheet.Cells(rng.row, 1).Value  ' Column A
+        colBValue = ThisWorkbook.ActiveSheet.Cells(rng.row, 2).Value  ' Column B
+        colCValue = ThisWorkbook.ActiveSheet.Cells(rng.row, 3).Value  ' Column C
 
         ' --- Write to the destination workbook ---
         With wbDest.Sheets(1)
-            .Range("H7").value = colEValue
-            .Range("H8").value = colFValue
-            Debug.Print "H7 value set to: " & colEValue
-            Debug.Print "H8 value set to: " & colFValue
+            .Range("H7").Value = colEValue
+            .Range("H8").Value = colFValue
+            .Range("C8").Value = colGValue
+            .Range("C6").Value = UCase(CStr(colHValue))
+            .Range("H6").Value = colCValue
+            .Range("C7").Value = colAValue & " REV." & colBValue
         End With
 
         ' --- Leave the destination workbook open ---

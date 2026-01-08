@@ -99,30 +99,71 @@ Private Sub GenRandomNumber_Click()
         Exit Sub ' Do nothing if both empty
     End If
 
-    ' Check if ONLY one textbox has a value
-    Dim upperTol As Double, lowerTol As Double, decPlaces As Long, resultVal As Double
-    Dim upperDp As Long, lowerDp As Long, resultStr As String
-
-    On Error GoTo ValueError
-    If Trim(Me.UpperTolerance.Text) = "" Then
-        ' Only lower tolerance has a value
-        lowerTol = ToNumber(Me.LowerTolerance.Text)
-        upperTol = lowerTol
-    ElseIf Trim(Me.LowerTolerance.Text) = "" Then
-        ' Only upper tolerance has a value
-        upperTol = ToNumber(Me.UpperTolerance.Text)
-        lowerTol = upperTol
-    Else
-        ' Both have values, proceed as before
-        upperTol = ToNumber(Me.UpperTolerance.Text)
-        lowerTol = ToNumber(Me.LowerTolerance.Text)
-    End If
+    ' Check if checkbox is checked for dynamic tolerance mode
+    Dim isDynamicMode As Boolean
+    isDynamicMode = False
+    On Error Resume Next
+    isDynamicMode = Me.CheckBox1.Value
     On Error GoTo 0
 
-    ' Get decimal places of input
-    upperDp = CountDecimalPlaces(Me.UpperTolerance.Text)
-    lowerDp = CountDecimalPlaces(Me.LowerTolerance.Text)
-    decPlaces = IIf(upperDp > lowerDp, upperDp, lowerDp)
+    Dim upperTol As Double, lowerTol As Double, decPlaces As Long, resultVal As Double
+    Dim upperDp As Long, lowerDp As Long, resultStr As String
+    Dim baseValue As Double
+
+    On Error GoTo ValueError
+    If isDynamicMode Then
+        ' Dynamic mode: read base value from LowerTolerance textbox
+        If Trim(Me.LowerTolerance.Text) = "" Then
+            MsgBox "Please enter a base value in Lower Tolerance textbox for dynamic mode.", vbExclamation, "Input Error"
+            Exit Sub
+        End If
+        baseValue = ToNumber(Me.LowerTolerance.Text)
+
+        ' Get the selected cell's row to fetch col D and E values
+        Dim selectedCell As Range, rowNum As Long
+        Dim colDValue As Variant, colEValue As Variant
+        Set selectedCell = ActiveCell
+        rowNum = selectedCell.Row
+
+        ' Read col D (upper tolerance) and col E (lower tolerance) from the selected row
+        colDValue = ActiveSheet.Cells(rowNum, 4).Value  ' Col D
+        colEValue = ActiveSheet.Cells(rowNum, 5).Value  ' Col E
+
+        ' Convert to numbers, use 0 if empty
+        upperTol = IIf(colDValue = "", 0, ToNumber(colDValue))
+        lowerTol = IIf(colEValue = "", 0, ToNumber(colEValue))
+
+        ' Build dynamic range: [baseValue + lowerTol, baseValue + upperTol]
+        upperTol = baseValue + upperTol
+        lowerTol = baseValue + lowerTol
+
+        ' Decimal places from col D and E
+        upperDp = CountDecimalPlaces(ToNumber(colDValue))
+        lowerDp = CountDecimalPlaces(ToNumber(colEValue))
+        decPlaces = IIf(upperDp > lowerDp, upperDp, lowerDp)
+        Debug.Print "Dynamic Mode - baseValue: " & baseValue & ", upperTol: " & upperTol & ", lowerTol: " & lowerTol & ", decPlaces: " & decPlaces
+    Else
+        ' Original mode: read from tolerance textboxes
+        If Trim(Me.UpperTolerance.Text) = "" Then
+            ' Only lower tolerance has a value
+            lowerTol = ToNumber(Me.LowerTolerance.Text)
+            upperTol = lowerTol
+        ElseIf Trim(Me.LowerTolerance.Text) = "" Then
+            ' Only upper tolerance has a value
+            upperTol = ToNumber(Me.UpperTolerance.Text)
+            lowerTol = upperTol
+        Else
+            ' Both have values, proceed as before
+            upperTol = ToNumber(Me.UpperTolerance.Text)
+            lowerTol = ToNumber(Me.LowerTolerance.Text)
+        End If
+
+        ' Get decimal places of input
+        upperDp = CountDecimalPlaces(Me.UpperTolerance.Text)
+        lowerDp = CountDecimalPlaces(Me.LowerTolerance.Text)
+        decPlaces = IIf(upperDp > lowerDp, upperDp, lowerDp)
+    End If
+    On Error GoTo 0
 
     ' Check if both tolerances are whole numbers
     Dim bothWholeNumbers As Boolean
@@ -198,76 +239,3 @@ Private Sub GenRandomNumber_Click()
 ValueError:
     MsgBox "One or both input values are not valid numbers!", vbExclamation, "Input Error"
 End Sub
-'Private Sub GenRandomNumber_Click()
-'    ' Check if both textboxes are empty
-'    If Trim(Me.UpperTolerance.Text) = "" And Trim(Me.LowerTolerance.Text) = "" Then
-'        Exit Sub ' Do nothing if both empty
-'    End If
-'
-'    ' Check if ONLY one textbox has a value
-'    Dim upperTol As Double, lowerTol As Double, decPlaces As Long, resultVal As Double
-'    Dim upperDp As Long, lowerDp As Long, resultStr As String
-'
-'    On Error GoTo ValueError
-'    If Trim(Me.UpperTolerance.Text) = "" Then
-'        ' Only lower tolerance has a value
-'        lowerTol = ToNumber(Me.LowerTolerance.Text)
-'        upperTol = lowerTol
-'    ElseIf Trim(Me.LowerTolerance.Text) = "" Then
-'        ' Only upper tolerance has a value
-'        upperTol = ToNumber(Me.UpperTolerance.Text)
-'        lowerTol = upperTol
-'    Else
-'        ' Both have values, proceed as before
-'        upperTol = ToNumber(Me.UpperTolerance.Text)
-'        lowerTol = ToNumber(Me.LowerTolerance.Text)
-'    End If
-'    On Error GoTo 0
-'
-'    ' Get decimal places of input
-'    upperDp = CountDecimalPlaces(Me.UpperTolerance.Text)
-'    lowerDp = CountDecimalPlaces(Me.LowerTolerance.Text)
-'    decPlaces = IIf(upperDp > lowerDp, upperDp, lowerDp)
-'
-'    ' Ensure tolerances are valid
-'    If upperTol < lowerTol Then
-'        MsgBox "Upper Tolerance must be greater than or equal to Lower Tolerance.", vbExclamation, "Input Error"
-'        Exit Sub
-'    End If
-'
-'    ' Generate result with more precise calculations
-'    Dim idx As Long
-'    If upperTol = lowerTol Then
-'        ' Upper and lower bounds are the same, use that value
-'        resultVal = lowerTol
-'         For idx = 1 To Data_SharedValues.ItemCount
-'            If decPlaces > 0 Then
-'                 resultStr = Format(resultVal, "0." & String(decPlaces, "0"))
-'             Else
-'                resultStr = CStr(resultVal)
-'            End If
-'                Me.Controls("txtItem" & idx).Text = resultStr
-'            Next idx
-'    Else
-'        For idx = 1 To Data_SharedValues.ItemCount
-'            Randomize  ' Re-seed random number generator
-'            ' Generate a random number between 0 and 1
-'            Dim randomNumber As Double
-'            randomNumber = Rnd
-'
-'            ' Scale the random number to the range, using *more* precision.
-'            resultVal = lowerTol + (upperTol - lowerTol) * randomNumber
-'
-'             If decPlaces > 0 Then
-'                 resultStr = Format(resultVal, "0." & String(decPlaces, "0"))
-'            Else
-'                resultStr = CStr(resultVal)
-'            End If
-'
-'            Me.Controls("txtItem" & idx).Text = resultStr
-'        Next idx
-'    End If
-'    Exit Sub
-'ValueError:
-'    MsgBox "One or both input values are not valid numbers!", vbExclamation, "Input Error"
-'End Sub
