@@ -1,0 +1,223 @@
+Part report,,,,,,,,
+,,,,,,,,
+System.Object[]
+
+<No. 1 area>
+Serial Counter,1,,71852-1,,,,
+Overall result,---,,,,,,
+Measurement results,,,,,,,
+No.,measurement item,mes. value,units,design val.,upper limit,lower limit,res.
+2,LN-PT002,0.7788,inch,0.78,0.01,-0.01,OK
+1,LN-PT001,4.2498,inch,4.25,0.01,-0.01,OK
+3,PT-PT001,2.7203,inch,0,2.73,2.72,OK
+4,PT-PT002,1.9007,inch,1.9,0.005,-0.005,OK
+14,ARC006,0.4997,inch,0.5,0.01,-0.01,OK
+8,ARC001,0.1887,inch,0.19,0.01,-0.01,OK
+6,LN-PT003,0.45,inch,0.45,0.01,-0.01,OK
+16,ANGLE001,134.98,deg,135,0.5,-0.5,OK
+7,LN-PT004,0.1132,inch,0.12,0.01,-0.01,OK
+9,ARC002,0.188,inch,0.19,0.01,-0.01,OK
+15,LN-PT005,2.1019,inch,2.1,0.01,-0.01,OK
+5,LN-LN002,0.3775,inch,0,0,0,---
+13,LN-LN003,1.3772,inch,1.38,0.01,-0.01,OK
+10,ARC003,0.1876,inch,0.19,0.01,-0.01,OK
+11,ARC004,0.1879,inch,0.19,0.01,-0.01,OK
+12,ARC005,0.1921,inch,0.19,0.01,-0.01,OK
+
+<No. 2 area>
+Serial Counter,2,,71852-2,,,,
+Overall result,NG,,,,,,
+Measurement results,,,,,,,
+No.,measurement item,mes. value,units,design val.,upper limit,lower limit,res.
+2,LN-PT002,0.7806,inch,0.78,0.01,-0.01,OK
+1,LN-PT001,4.2518,inch,4.25,0.01,-0.01,OK
+3,PT-PT001,2.7183,inch,0,2.73,2.72,NG
+4,PT-PT002,1.8993,inch,1.9,0.005,-0.005,OK
+14,ARC006,0.5016,inch,0.5,0.01,-0.01,OK
+8,ARC001,0.1901,inch,0.19,0.01,-0.01,OK
+6,LN-PT003,0.4514,inch,0.45,0.01,-0.01,OK
+16,ANGLE001,134.72,deg,135,0.5,-0.5,OK
+7,LN-PT004,0.1155,inch,0.12,0.01,-0.01,OK
+9,ARC002,0.1881,inch,0.19,0.01,-0.01,OK
+15,LN-PT005,2.1005,inch,2.1,0.01,-0.01,OK
+5,LN-LN002,0.3778,inch,0,0,0,---
+13,LN-LN003,1.3776,inch,1.38,0.01,-0.01,OK
+10,ARC003,0.1903,inch,0.19,0.01,-0.01,OK
+11,ARC004,0.1885,inch,0.19,0.01,-0.01,OK
+12,ARC005,0.1916,inch,0.19,0.01,-0.01,OK
+
+<No. 3 area>
+Serial Counter,3,,71852-3,,,,
+Overall result,NG,,,,,,
+Measurement results,,,,,,,
+No.,measurement item,mes. value,units,design val.,upper limit,lower limit,res.
+2,LN-PT002,0.778,inch,0.78,0.01,-0.01,OK
+1,LN-PT001,4.2534,inch,4.25,0.01,-0.01,OK
+3,PT-PT001,2.7182,inch,0,2.73,2.72,NG
+4,PT-PT002,1.8998,inch,1.9,0.005,-0.005,OK
+14,ARC006,0.5029,inch,0.5,0.01,-0.01,OK
+8,ARC001,0.1905,inch,0.19,0.01,-0.01,OK
+6,LN-PT003,0.4506,inch,0.45,0.01,-0.01,OK
+16,ANGLE001,134.73,deg,135,0.5,-0.5,OK
+7,LN-PT004,0.1223,inch,0.12,0.01,-0.01,OK
+9,ARC002,0.1881,inch,0.19,0.01,-0.01,OK
+15,LN-PT005,2.1016,inch,2.1,0.01,-0.01,OK
+5,LN-LN002,0.377,inch,0,0,0,---
+13,LN-LN003,1.3792,inch,1.38,0.01,-0.01,OK
+10,ARC003,0.1873,inch,0.19,0.01,-0.01,OK
+11,ARC004,0.1893,inch,0.19,0.01,-0.01,OK
+12,ARC005,0.1906,inch,0.19,0.01,-0.01,OK
+
+<No. 4 area>
+Serial Counter,4,,71853-1,,,,
+Overall result,NG,,,,,,
+Measurement results,,,,,,,
+No.,measurement item,mes. value,units,design val.,upper limit,lower limit,res.
+2,LN-PT002,0.7814,inch,0.78,0.01,-0.01,OK
+1,LN-PT001,4.2547,inch,4.25,0.01,-0.01,OK
+3,PT-PT001,2.7195,inch,0,2.73,2.72,NG
+4,PT-PT002,1.901,inch,1.9,0.005,-0.005,OK
+14,ARC006,0.501,inch,0.5,0.01,-0.01,OK
+8,ARC001,0.1928,inch,0.19,0.01,-0.01,OK
+6,LN-PT003,0.4523,inch,0.45,0.01,-0.01,OK
+16,ANGLE001,134.56,deg,135,0.5,-0.5,OK
+7,LN-PT004,0.1179,inch,0.12,0.01,-0.01,OK
+9,ARC002,0.188,inch,0.19,0.01,-0.01,OK
+15,LN-PT005,2.1072,inch,2.1,0.01,-0.01,OK
+5,LN-LN002,0.3768,inch,0,0,0,---
+13,LN-LN003,1.3766,inch,1.38,0.01,-0.01,OK
+10,ARC003,0.188,inch,0.19,0.01,-0.01,OK
+11,ARC004,0.1867,inch,0.19,0.01,-0.01,OK
+12,ARC005,0.1892,inch,0.19,0.01,-0.01,OK
+
+<No. 5 area>
+Serial Counter,5,,,,,,
+Overall result,---,,,,,,
+Measurement results,,,,,,,
+No.,measurement item,mes. value,units,design val.,upper limit,lower limit,res.
+2,LN-PT002,0.7816,inch,0.78,0.01,-0.01,OK
+1,LN-PT001,4.2524,inch,4.25,0.01,-0.01,OK
+3,PT-PT001,2.7201,inch,0,2.73,2.72,OK
+4,PT-PT002,1.9009,inch,1.9,0.005,-0.005,OK
+14,ARC006,0.5016,inch,0.5,0.01,-0.01,OK
+8,ARC001,0.1915,inch,0.19,0.01,-0.01,OK
+6,LN-PT003,0.4514,inch,0.45,0.01,-0.01,OK
+16,ANGLE001,134.78,deg,135,0.5,-0.5,OK
+7,LN-PT004,0.1196,inch,0.12,0.01,-0.01,OK
+9,ARC002,0.1886,inch,0.19,0.01,-0.01,OK
+15,LN-PT005,2.0992,inch,2.1,0.01,-0.01,OK
+5,LN-LN002,0.3774,inch,0,0,0,---
+13,LN-LN003,1.3789,inch,1.38,0.01,-0.01,OK
+10,ARC003,0.1881,inch,0.19,0.01,-0.01,OK
+11,ARC004,0.1904,inch,0.19,0.01,-0.01,OK
+12,ARC005,0.1909,inch,0.19,0.01,-0.01,OK
+
+<No. 6 area>
+Serial Counter,6,,,,,,
+Overall result,NG,,,,,,
+Measurement results,,,,,,,
+No.,measurement item,mes. value,units,design val.,upper limit,lower limit,res.
+2,LN-PT002,0.7795,inch,0.78,0.01,-0.01,OK
+1,LN-PT001,4.2518,inch,4.25,0.01,-0.01,OK
+3,PT-PT001,2.7212,inch,0,2.73,2.72,OK
+4,PT-PT002,1.9008,inch,1.9,0.005,-0.005,OK
+14,ARC006,0.5007,inch,0.5,0.01,-0.01,OK
+8,ARC001,0.1888,inch,0.19,0.01,-0.01,OK
+6,LN-PT003,0.4502,inch,0.45,0.01,-0.01,OK
+16,ANGLE001,134.86,deg,135,0.5,-0.5,OK
+7,LN-PT004,0.1076,inch,0.12,0.01,-0.01,NG
+9,ARC002,0.1876,inch,0.19,0.01,-0.01,OK
+15,LN-PT005,2.1018,inch,2.1,0.01,-0.01,OK
+5,LN-LN002,0.3759,inch,0,0,0,---
+13,LN-LN003,1.3775,inch,1.38,0.01,-0.01,OK
+10,ARC003,0.1852,inch,0.19,0.01,-0.01,OK
+11,ARC004,0.1892,inch,0.19,0.01,-0.01,OK
+12,ARC005,0.1914,inch,0.19,0.01,-0.01,OK
+
+<No. 7 area>
+Serial Counter,7,,,,,,
+Overall result,NG,,,,,,
+Measurement results,,,,,,,
+No.,measurement item,mes. value,units,design val.,upper limit,lower limit,res.
+2,LN-PT002,0.7811,inch,0.78,0.01,-0.01,OK
+1,LN-PT001,4.2503,inch,4.25,0.01,-0.01,OK
+3,PT-PT001,2.7196,inch,0,2.73,2.72,NG
+4,PT-PT002,1.9018,inch,1.9,0.005,-0.005,OK
+14,ARC006,0.5008,inch,0.5,0.01,-0.01,OK
+8,ARC001,0.1896,inch,0.19,0.01,-0.01,OK
+6,LN-PT003,0.4506,inch,0.45,0.01,-0.01,OK
+16,ANGLE001,134.85,deg,135,0.5,-0.5,OK
+7,LN-PT004,0.1165,inch,0.12,0.01,-0.01,OK
+9,ARC002,0.1875,inch,0.19,0.01,-0.01,OK
+15,LN-PT005,2.0978,inch,2.1,0.01,-0.01,OK
+5,LN-LN002,0.3771,inch,0,0,0,---
+13,LN-LN003,1.3763,inch,1.38,0.01,-0.01,OK
+10,ARC003,0.1904,inch,0.19,0.01,-0.01,OK
+11,ARC004,0.1867,inch,0.19,0.01,-0.01,OK
+12,ARC005,0.1905,inch,0.19,0.01,-0.01,OK
+
+<No. 8 area>
+Serial Counter,8,,,,,,
+Overall result,---,,,,,,
+Measurement results,,,,,,,
+No.,measurement item,mes. value,units,design val.,upper limit,lower limit,res.
+2,LN-PT002,0.7801,inch,0.78,0.01,-0.01,OK
+1,LN-PT001,4.2496,inch,4.25,0.01,-0.01,OK
+3,PT-PT001,2.7207,inch,0,2.73,2.72,OK
+4,PT-PT002,1.9014,inch,1.9,0.005,-0.005,OK
+14,ARC006,0.5009,inch,0.5,0.01,-0.01,OK
+8,ARC001,0.1912,inch,0.19,0.01,-0.01,OK
+6,LN-PT003,0.4511,inch,0.45,0.01,-0.01,OK
+16,ANGLE001,134.62,deg,135,0.5,-0.5,OK
+7,LN-PT004,0.1196,inch,0.12,0.01,-0.01,OK
+9,ARC002,0.1883,inch,0.19,0.01,-0.01,OK
+15,LN-PT005,2.0989,inch,2.1,0.01,-0.01,OK
+5,LN-LN002,0.3785,inch,0,0,0,---
+13,LN-LN003,1.3767,inch,1.38,0.01,-0.01,OK
+10,ARC003,0.1893,inch,0.19,0.01,-0.01,OK
+11,ARC004,0.1877,inch,0.19,0.01,-0.01,OK
+12,ARC005,0.1916,inch,0.19,0.01,-0.01,OK
+
+<No. 9 area>
+Serial Counter,0009
+Overall result,NG
+Measurement results
+No.,measurement item,mes. value,units,design val.,upper limit,lower limit,res.
+2,LN-PT002,0.7803,inch,0.7800,0.0100,-0.0100,OK,
+1,LN-PT001,4.2498,inch,4.2500,0.0100,-0.0100,OK,
+3,PT-PT001,2.7189,inch,0.0000,2.7300,2.7200,NG,
+4,PT-PT002,1.8996,inch,1.9000,0.0050,-0.0050,OK,
+14,ARC006,0.5011,inch,0.5000,0.0100,-0.0100,OK,
+8,ARC001,0.1905,inch,0.1900,0.0100,-0.0100,OK,
+6,LN-PT003,0.4511,inch,0.4500,0.0100,-0.0100,OK,
+16,ANGLE001,134.70,deg,135.00,0.50,-0.50,OK,
+7,LN-PT004,0.1209,inch,0.1200,0.0100,-0.0100,OK,
+9,ARC002,0.1889,inch,0.1900,0.0100,-0.0100,OK,
+15,LN-PT005,2.0995,inch,2.1000,0.0100,-0.0100,OK,
+5,LN-LN002,0.3777,inch,0.0000,0.0000,0.0000,---,
+13,LN-LN003,1.3765,inch,1.3800,0.0100,-0.0100,OK,
+10,ARC003,0.1897,inch,0.1900,0.0100,-0.0100,OK,
+11,ARC004,0.1871,inch,0.1900,0.0100,-0.0100,OK,
+12,ARC005,0.1907,inch,0.1900,0.0100,-0.0100,OK,
+
+<No. 10 area>
+Serial Counter,0010
+Overall result,---
+Measurement results
+No.,measurement item,mes. value,units,design val.,upper limit,lower limit,res.
+2,LN-PT002,0.7813,inch,0.7800,0.0100,-0.0100,OK,
+1,LN-PT001,4.2508,inch,4.2500,0.0100,-0.0100,OK,
+3,PT-PT001,2.7205,inch,0.0000,2.7300,2.7200,OK,
+4,PT-PT002,1.9015,inch,1.9000,0.0050,-0.0050,OK,
+14,ARC006,0.5019,inch,0.5000,0.0100,-0.0100,OK,
+8,ARC001,0.1913,inch,0.1900,0.0100,-0.0100,OK,
+6,LN-PT003,0.4510,inch,0.4500,0.0100,-0.0100,OK,
+16,ANGLE001,134.68,deg,135.00,0.50,-0.50,OK,
+7,LN-PT004,0.1145,inch,0.1200,0.0100,-0.0100,OK,
+9,ARC002,0.1883,inch,0.1900,0.0100,-0.0100,OK,
+15,LN-PT005,2.0996,inch,2.1000,0.0100,-0.0100,OK,
+5,LN-LN002,0.3771,inch,0.0000,0.0000,0.0000,---,
+13,LN-LN003,1.3781,inch,1.3800,0.0100,-0.0100,OK,
+10,ARC003,0.1900,inch,0.1900,0.0100,-0.0100,OK,
+11,ARC004,0.1883,inch,0.1900,0.0100,-0.0100,OK,
+12,ARC005,0.1904,inch,0.1900,0.0100,-0.0100,OK,
