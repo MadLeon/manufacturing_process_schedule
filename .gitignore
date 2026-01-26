@@ -1,0 +1,53 @@
+# Build outputs and temporary files
+.vs/
+bin/
+obj/
+*.exe
+*.dll
+*.pdb
+*.so
+*.dylib
+
+# Python related
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+
+# Node.js related
+node_modules/
+package-lock.json
+npm-debug.log
+
+# IDE specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Test and temporary files
+*.bak
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Excel/Office temporary files
+~$*.xlsm
+~$*.xlsx
+~$*.xls
+*.xlk
+.~lock.* 
+
+# Compiled code
+*.o
+*.class
+*.jar
+
+# Dependency files
+packages/
