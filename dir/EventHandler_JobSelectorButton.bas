@@ -54,9 +54,9 @@ Private Sub Btn_Click()
     ' Validate selectedRow
     If selectedRow > 0 And selectedRow <= lastRow Then
         ' Write selected drawing number and other information to Excel
-        currentSheet.Cells(selectedRow, 1).Value = selectedDrawingNumber ' Column A
-        currentSheet.Cells(selectedRow, 5).Value = oe_number ' Column E
-        currentSheet.Cells(selectedRow, 6).Value = po_number ' Column F
+        currentSheet.Cells(selectedRow, 1).Value = UCase(selectedDrawingNumber) ' Column A
+        currentSheet.Cells(selectedRow, 5).Value = UCase(oe_number) ' Column E
+        currentSheet.Cells(selectedRow, 6).Value = UCase(po_number) ' Column F
         currentSheet.Cells(selectedRow, 7).Value = UCase(description) ' Column G
 
         ' Construct the formula
@@ -66,7 +66,7 @@ Private Sub Btn_Click()
         currentSheet.Cells(selectedRow, 4).formula = formula
 
         ' Add hyperlink to the drawing number in column A
-        mod_CreateHyperlinkes.CreateSingleHyperlink currentSheet.Cells(selectedRow, 1)
+        ' mod_CreateHyperlinkes.CreateSingleHyperlink currentSheet.Cells(selectedRow, 1)
 
     Else
         Debug.Print "Error: selectedRow (" & selectedRow & ") is out of valid range (1 to " & lastRow & ")."
@@ -75,4 +75,5 @@ Private Sub Btn_Click()
 
     Unload JobSelector
 End Sub
+
 

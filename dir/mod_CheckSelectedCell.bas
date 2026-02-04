@@ -1,3 +1,20 @@
+' --- Helper function to clean illegal filename characters ---
+Function CleanFileName(fileName As String) As String
+    Dim result As String
+    result = fileName
+    ' Replace illegal filename characters
+    result = Replace(result, "<", "_")
+    result = Replace(result, ">", "_")
+    result = Replace(result, ":", "_")
+    result = Replace(result, """", "_")
+    result = Replace(result, "/", "_")
+    result = Replace(result, "\", "_")
+    result = Replace(result, "|", "_")
+    result = Replace(result, "?", "_")
+    result = Replace(result, "*", "_")
+    CleanFileName = result
+End Function
+
 Sub CheckSelectedCell()
     Dim rng As Range
     Dim sourceFilePath As String, destFilePath As String
@@ -55,31 +72,79 @@ Sub CheckSelectedCell()
         
         ' --- Build Destination File Path ---
         ' If column H is "Candu" and column F has a value, create subfolder path
+        ' Clean the filename to remove illegal characters
+        Dim cleanedColDValue As String
+        cleanedColDValue = CleanFileName(CStr(colDValue))
+        
         If CStr(colHValue) = "Candu" And Not IsEmpty(colFValue) Then
             Dim subfolderPath As String
             subfolderPath = destBasePath & "\" & CStr(colFValue)
+            
+            Debug.Print "Subfolder logic triggered for Candu"
+            Debug.Print "Subfolder path: " & subfolderPath
+            Debug.Print "Subfolder exists before creation: " & fso.FolderExists(subfolderPath)
             
             ' Create the subfolder if it doesn't exist
             If Not fso.FolderExists(subfolderPath) Then
                 On Error Resume Next
                 fso.CreateFolder subfolderPath
+                Dim createErr As Integer
+                createErr = Err.Number
                 On Error GoTo 0
-                Debug.Print "Created folder: " & subfolderPath
+                Debug.Print "Attempted to create subfolder. Error code: " & createErr
+                Debug.Print "Subfolder exists after creation attempt: " & fso.FolderExists(subfolderPath)
+            Else
+                Debug.Print "Subfolder already exists"
             End If
             
-            destFilePath = subfolderPath & "\" & colDValue & ".xlsm"
+            destFilePath = subfolderPath & "\" & cleanedColDValue & ".xlsm"
         Else
-            destFilePath = destBasePath & "\" & colDValue & ".xlsm"  ' Copy name
+            destFilePath = destBasePath & "\" & cleanedColDValue & ".xlsm"  ' Copy name
         End If
 
         ' --- Copy the source file ---
+        Debug.Print "========== COPY DEBUG INFO =========="
+        Debug.Print "Time: " & Format(Now, "HH:MM:SS")
+        Debug.Print "Source file path: " & sourceFilePath
+        Debug.Print "Source file path length: " & Len(sourceFilePath)
+        Debug.Print "Source file exists (FSO): " & fso.FileExists(sourceFilePath)
+        Debug.Print "Destination path: " & destFilePath
+        Debug.Print "Destination path length: " & Len(destFilePath)
+        Dim destFolderPath As String
+        destFolderPath = Left(destFilePath, InStrRev(destFilePath, "\") - 1)
+        Debug.Print "Destination folder path: " & destFolderPath
+        Debug.Print "Destination folder path length: " & Len(destFolderPath)
+        Debug.Print "Destination folder exists (FSO): " & fso.FolderExists(destFolderPath)
+        Debug.Print "Destination base folder exists (FSO): " & fso.FolderExists(destBasePath)
+        Debug.Print "======================================"
+        
         On Error Resume Next
         Kill destFilePath  ' Delete destination if it exists
+        ' Use fso.CopyFile instead of FileCopy for better stability
+        fso.CopyFile sourceFilePath, destFilePath, True
+        If Err.Number <> 0 Then
+            Debug.Print "fso.CopyFile ERROR: " & Err.Number & " - " & Err.description
+            Debug.Print "Error Time: " & Format(Now, "HH:MM:SS")
+            Debug.Print "Source file exists at error time (FSO): " & fso.FileExists(sourceFilePath)
+            Debug.Print "Source file exists at error time (DIR): " & (Dir(sourceFilePath) <> "")
+            MsgBox "Copy failed: " & Err.description, vbCritical, "Error"
+            Err.Clear
+            On Error GoTo 0
+            Exit Sub
+        End If
         On Error GoTo 0
-        FileCopy sourceFilePath, destFilePath
+        Debug.Print "File copied successfully to: " & destFilePath
 
         ' --- Open the copied file ---
+        On Error Resume Next
         Set wbDest = Workbooks.Open(destFilePath)
+        If Err.Number <> 0 Then
+            Debug.Print "Open file ERROR: " & Err.Number & " - " & Err.description
+            Err.Clear
+            On Error GoTo 0
+        End If
+        On Error GoTo 0
+        
         If wbDest Is Nothing Then
             Debug.Print "Could not open the destination file: " & destFilePath
             Exit Sub
@@ -100,7 +165,7 @@ Sub CheckSelectedCell()
             .Range("C8").Value = colGValue
             .Range("C6").Value = UCase(CStr(colHValue))
             .Range("H6").Value = colCValue
-            .Range("C7").Value = colAValue & " REV." & colBValue
+            .Range("C7").Value = colAValue & " REV. " & colBValue
         End With
 
         ' --- Leave the destination workbook open ---
@@ -112,3 +177,4 @@ Sub CheckSelectedCell()
         Debug.Print "Selected cell not in column D or is empty."
     End If
 End Sub
+

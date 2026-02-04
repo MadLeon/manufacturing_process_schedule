@@ -1,6 +1,47 @@
 # Merge CSVs in the order defined by first CSV's row numbers
+
+# Ask user if they want to keep the "0." prefix (default: no)
+$response = Read-Host "Keep 0. prefix? (y=yes, n=no, default: n)"
+if ([string]::IsNullOrWhiteSpace($response)) {
+    $response = "n"
+}
+$keepZeroPrefix = ($response -eq "y" -or $response -eq "Y")
+Write-Host "Prefix setting: $(if ($keepZeroPrefix) { 'Keep 0.' } else { 'Remove 0.' })" -ForegroundColor Green
+
+# Function to format decimal values to 4 decimal places
+function Format-DecimalValue {
+    param(
+        [string]$value,
+        [bool]$keepPrefix
+    )
+    
+    if ([string]::IsNullOrWhiteSpace($value)) {
+        return $value
+    }
+    
+    # Try to parse as decimal
+    $doubleValue = 0
+    if ([double]::TryParse($value, [ref]$doubleValue)) {
+        # Format to 4 decimal places
+        $formatted = $doubleValue.ToString("F4")
+        
+        # If not keeping prefix and starts with "0.", remove the "0"
+        if (!$keepPrefix -and $formatted -match '^0\.') {
+            $formatted = $formatted.Substring(1)
+        }
+        
+        # Create a formula that forces text display with exact format
+        # Use the formula =TEXT(...) to preserve the format
+        # But wrap the result in quotes to force text display
+        return "=""" + $formatted + """"
+    }
+    
+    # If not a number, return as is
+    return $value
+}
+
 $files = @(Get-ChildItem -Path "." -Filter "*.csv" |
-    Where-Object { $_.Name -ne "merged.csv" } |
+    Where-Object { $_.Name -ne "merged.csv" -and $_.Name -ne "merged.xlsx" } |
     Sort-Object {
         $base = $_.BaseName
         # Try to extract number from parentheses first: (72373-1) or (-1)
@@ -201,9 +242,14 @@ foreach ($file in $files) {
         foreach ($refRow in $refOrder) {
             $row = $data | Where-Object { $_.Name -eq $refRow.Name }
             if ($row) {
-                # Replace NoStr with reference NoStr, keep the rest
-                $cols = $row.Cols
+                # Create a copy of the columns to avoid reference issues
+                $cols = @($row.Cols)
                 $cols[0] = $refRow.NoStr
+                # Format C column (index 2) if it exists
+                if ($cols.Count -gt 2) {
+                    $formattedValue = Format-DecimalValue -value $cols[2] -keepPrefix $keepZeroPrefix
+                    $cols[2] = $formattedValue
+                }
                 $allAreaRows += @{
                     NoStr = [double]$refRow.NoStr
                     Line  = ($cols -join ",")
@@ -260,4 +306,4 @@ foreach ($file in $files) {
     $index++
 }
 
-Write-Host "✅ Merge complete. Output file: $output"
+Write-Host "✅ Merge complete. Output file: $output" -ForegroundColor Green
