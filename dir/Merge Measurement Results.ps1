@@ -44,8 +44,13 @@ $files = @(Get-ChildItem -Path "." -Filter "*.csv" |
     Where-Object { $_.Name -ne "merged.csv" -and $_.Name -ne "merged.xlsx" } |
     Sort-Object {
         $base = $_.BaseName
-        # Try to extract number from parentheses first: (72373-1) or (-1)
-        if ($base -match '\(([^)]*-?\d+)\)') { 
+        # Try to extract number from parentheses first: (1), (2), or complex formats like (72373-1)
+        if ($base -match '\((\d+)\)$') {
+            # Simple format: (1), (2), etc.
+            [int]$matches[1]
+        }
+        elseif ($base -match '\(([^)]*-\d+)\)') {
+            # Complex format: (xxx-1), (xxx-2), etc.
             $numStr = $matches[1]
             if ($numStr -match '-(\d+)$') { [int]$matches[1] } else { [int]::MaxValue }
         }
