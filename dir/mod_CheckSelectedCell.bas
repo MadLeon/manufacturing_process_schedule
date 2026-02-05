@@ -2,13 +2,13 @@
 Function CleanFileName(fileName As String) As String
     Dim result As String
     result = fileName
-    ' Replace illegal filename characters
+    ' Replace illegal filename characters (but NOT backslash to preserve path structure)
     result = Replace(result, "<", "_")
     result = Replace(result, ">", "_")
     result = Replace(result, ":", "_")
     result = Replace(result, """", "_")
     result = Replace(result, "/", "_")
-    result = Replace(result, "\", "_")
+    ' Do NOT replace backslash - it's used for paths
     result = Replace(result, "|", "_")
     result = Replace(result, "?", "_")
     result = Replace(result, "*", "_")
