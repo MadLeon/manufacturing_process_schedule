@@ -23,10 +23,8 @@ Sub CheckSelectedCell()
     Dim fso As Object
 
     ' --- Configuration ---
-    Const sourceFileName As String = "ver. 1.03.xlsm"  ' File name to copy
-    sourceFilePath = "C:\Users\ee\Desktop\Dir History\" & sourceFileName
-    Dim dirHistoryPath As String
-    dirHistoryPath = "C:\Users\ee\Desktop\Dir History\"
+    Const sourceFileName As String = "DIR Template.xlsm"  ' File name to copy
+    sourceFilePath = "\\rtdnas2\QCReports\FINAL REPORTS\" & sourceFileName
     Dim destBasePath As String
     Dim colHValue As Variant
     
@@ -118,22 +116,36 @@ Sub CheckSelectedCell()
         Debug.Print "Destination base folder exists (FSO): " & fso.FolderExists(destBasePath)
         Debug.Print "======================================"
         
+        ' --- Check if destination file already exists ---
+        If fso.FileExists(destFilePath) Then
+            MsgBox "Destination file already exists: " & destFilePath & vbNewLine & "Operation cancelled.", vbExclamation, "File Already Exists"
+            Set fso = Nothing
+            Exit Sub
+        End If
+        
         On Error Resume Next
         Kill destFilePath  ' Delete destination if it exists
-        ' Use fso.CopyFile instead of FileCopy for better stability
-        fso.CopyFile sourceFilePath, destFilePath, True
+        Err.Clear
+        On Error GoTo 0
+        
+        ' Use FileCopy for better network path compatibility
+        On Error Resume Next
+        FileCopy sourceFilePath, destFilePath
         If Err.Number <> 0 Then
-            Debug.Print "fso.CopyFile ERROR: " & Err.Number & " - " & Err.description
+            Debug.Print "FileCopy ERROR: " & Err.Number & " - " & Err.description
             Debug.Print "Error Time: " & Format(Now, "HH:MM:SS")
-            Debug.Print "Source file exists at error time (FSO): " & fso.FileExists(sourceFilePath)
-            Debug.Print "Source file exists at error time (DIR): " & (Dir(sourceFilePath) <> "")
+            Debug.Print "Source file exists at error time: " & (Dir(sourceFilePath) <> "")
             MsgBox "Copy failed: " & Err.description, vbCritical, "Error"
             Err.Clear
             On Error GoTo 0
+            Set fso = Nothing
             Exit Sub
         End If
         On Error GoTo 0
         Debug.Print "File copied successfully to: " & destFilePath
+        
+        ' Add delay to ensure file is released from network
+        Application.Wait (Now + TimeValue("0:00:01"))
 
         ' --- Open the copied file ---
         On Error Resume Next
@@ -166,6 +178,7 @@ Sub CheckSelectedCell()
             .Range("C6").Value = UCase(CStr(colHValue))
             .Range("H6").Value = colCValue
             .Range("C7").Value = colAValue & " REV. " & colBValue
+            .Range("C11").Value = "INCH"
         End With
 
         ' --- Leave the destination workbook open ---

@@ -1,8 +1,3 @@
-' Class Module: EventHandler_JobSelectorButton
-Option Explicit
-
-Public WithEvents Btn As MSForms.CommandButton
-
 Private Sub Btn_Click()
     Dim selectedDrawingNumber As String
     Dim oe_number As String, po_number As String, part_number As String, description As String
@@ -17,7 +12,7 @@ Private Sub Btn_Click()
     tagParts = Split(Btn.Tag, "|")
 
     oe_number = tagParts(0)
-    po_number = tagParts(1)
+    po_number = ExtractCleanPONumber(tagParts(1))
     part_number = tagParts(2)
     selectedRow = mod_PublicData.GetLastEditedRow() ' Get row from public data module
 
@@ -76,4 +71,25 @@ Private Sub Btn_Click()
     Unload JobSelector
 End Sub
 
-
+' Extract standard PO format, removing revision information
+' Handles formats like: RT79-87640-PN-R004, RT98-87590-PN-R006-R.1, RT98-87590-PN-R006-R 1, etc.
+' Returns: RTXX-XXXXX-PN-RXXX without any revision suffix
+Function ExtractCleanPONumber(po_raw As String) As String
+    Dim regEx As Object
+    Dim matches As Object
+    
+    Set regEx = CreateObject("VBScript.RegExp")
+    ' Match standard PO format: RTXX-XXXXX-PN-RXXX
+    regEx.Pattern = "^(RT\d{2}-\d{5}-PN-R\d{3})"
+    regEx.Global = False
+    regEx.IgnoreCase = True
+    
+    Set matches = regEx.Execute(po_raw)
+    
+    If matches.Count > 0 Then
+        ExtractCleanPONumber = matches(0).Submatches(0)
+    Else
+        ' If no match found, return original value
+        ExtractCleanPONumber = po_raw
+    End If
+End Function
