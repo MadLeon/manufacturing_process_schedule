@@ -7,6 +7,13 @@ using System.Text.Json.Serialization;
 
 namespace ToleranceConverter
 {
+    public enum ToleranceType
+    {
+        Internal,
+        External,
+        IT12Half
+    }
+
     public class ToleranceRange
     {
         [JsonPropertyName("minRange")]
@@ -29,6 +36,9 @@ namespace ToleranceConverter
 
         [JsonPropertyName("external")]
         public List<ToleranceRange> External { get; set; } = new List<ToleranceRange>();
+
+        [JsonPropertyName("it12half")]
+        public List<ToleranceRange> It12Half { get; set; } = new List<ToleranceRange>();
     }
 
     public class ToleranceDataService
@@ -46,14 +56,12 @@ namespace ToleranceConverter
             {
                 var assembly = System.Reflection.Assembly.GetExecutingAssembly();
                 var resourceName = "ToleranceConverter.tolerance_table.json";
-                
+
                 using (Stream? stream = assembly.GetManifestResourceStream(resourceName))
                 {
                     if (stream == null)
-                    {
                         throw new Exception($"Could not find embedded resource: {resourceName}");
-                    }
-                    
+
                     using (StreamReader reader = new StreamReader(stream))
                     {
                         string jsonContent = reader.ReadToEnd();
@@ -67,22 +75,28 @@ namespace ToleranceConverter
             }
         }
 
-        public (double upper, double lower)? GetTolerance(double dimension, bool isInternal)
+        /// <summary>
+        /// Returns upper and lower tolerance bounds for the given dimension and tolerance type.
+        /// Range lookup uses exclusive min, inclusive max: (minRange, maxRange].
+        /// </summary>
+        /// <param name="dimension">Nominal dimension in millimeters</param>
+        /// <param name="type">Tolerance type: Internal (H12), External (h12), or IT12Half</param>
+        /// <returns>Tuple of (upper, lower) tolerance values in mm, or null if not found</returns>
+        public (double upper, double lower)? GetTolerance(double dimension, ToleranceType type)
         {
             if (_toleranceTable == null)
                 return null;
 
-            var ranges = isInternal ? _toleranceTable.Internal : _toleranceTable.External;
-
-            var matchedRange = ranges.FirstOrDefault(r => 
-                dimension > r.MinRange && dimension <= r.MaxRange);
-
-            if (matchedRange != null)
+            List<ToleranceRange> ranges = type switch
             {
-                return (matchedRange.Upper, matchedRange.Lower);
-            }
+                ToleranceType.Internal => _toleranceTable.Internal,
+                ToleranceType.External => _toleranceTable.External,
+                ToleranceType.IT12Half => _toleranceTable.It12Half,
+                _ => _toleranceTable.Internal
+            };
 
-            return null;
+            var match = ranges.FirstOrDefault(r => dimension > r.MinRange && dimension <= r.MaxRange);
+            return match != null ? (match.Upper, match.Lower) : null;
         }
     }
 }

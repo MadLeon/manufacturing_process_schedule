@@ -52,5 +52,32 @@
     { "minRange": 355, "maxRange": 400, "upper": 0.000, "lower": -0.570 },
     { "minRange": 400, "maxRange": 450, "upper": 0.000, "lower": -0.630 },
     { "minRange": 450, "maxRange": 500, "upper": 0.000, "lower": -0.630 }
+  ],
+  "it12half": [
+    { "minRange": 0,   "maxRange": 3,   "upper":  0.050, "lower": -0.050 },
+    { "minRange": 3,   "maxRange": 6,   "upper":  0.060, "lower": -0.060 },
+    { "minRange": 6,   "maxRange": 10,  "upper":  0.075, "lower": -0.075 },
+    { "minRange": 10,  "maxRange": 14,  "upper":  0.090, "lower": -0.090 },
+    { "minRange": 14,  "maxRange": 18,  "upper":  0.090, "lower": -0.090 },
+    { "minRange": 18,  "maxRange": 24,  "upper":  0.105, "lower": -0.105 },
+    { "minRange": 24,  "maxRange": 30,  "upper":  0.105, "lower": -0.105 },
+    { "minRange": 30,  "maxRange": 40,  "upper":  0.125, "lower": -0.125 },
+    { "minRange": 40,  "maxRange": 50,  "upper":  0.125, "lower": -0.125 },
+    { "minRange": 50,  "maxRange": 65,  "upper":  0.150, "lower": -0.150 },
+    { "minRange": 65,  "maxRange": 80,  "upper":  0.150, "lower": -0.150 },
+    { "minRange": 80,  "maxRange": 100, "upper":  0.175, "lower": -0.175 },
+    { "minRange": 100, "maxRange": 120, "upper":  0.175, "lower": -0.175 },
+    { "minRange": 120, "maxRange": 140, "upper":  0.200, "lower": -0.200 },
+    { "minRange": 140, "maxRange": 160, "upper":  0.200, "lower": -0.200 },
+    { "minRange": 160, "maxRange": 180, "upper":  0.200, "lower": -0.200 },
+    { "minRange": 180, "maxRange": 200, "upper":  0.230, "lower": -0.230 },
+    { "minRange": 200, "maxRange": 225, "upper":  0.230, "lower": -0.230 },
+    { "minRange": 225, "maxRange": 250, "upper":  0.230, "lower": -0.230 },
+    { "minRange": 250, "maxRange": 280, "upper":  0.260, "lower": -0.260 },
+    { "minRange": 280, "maxRange": 315, "upper":  0.260, "lower": -0.260 },
+    { "minRange": 315, "maxRange": 355, "upper":  0.285, "lower": -0.285 },
+    { "minRange": 355, "maxRange": 400, "upper":  0.285, "lower": -0.285 },
+    { "minRange": 400, "maxRange": 450, "upper":  0.315, "lower": -0.315 },
+    { "minRange": 450, "maxRange": 500, "upper":  0.315, "lower": -0.315 }
   ]
 }
