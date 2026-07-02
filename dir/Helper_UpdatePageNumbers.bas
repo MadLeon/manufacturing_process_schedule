@@ -10,6 +10,11 @@ Public Sub UpdatePageNumbers()
     Dim totalSheets As Integer
     Dim count As Integer
 
+    ' Skip entirely while any visible sheet is locked (e.g. mid bulk-unlock);
+    ' writing to I5 on a protected sheet raises a runtime error once
+    ' UserInterfaceOnly resets on file reopen.
+    If Function_SignatureLock.IsAnySheetLocked() Then Exit Sub
+
     ' Count all worksheets except the one named "Data"
     totalSheets = 0
     For Each ws In ThisWorkbook.Sheets

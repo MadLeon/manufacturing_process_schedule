@@ -13,9 +13,23 @@ Option Explicit
 Private Sub Workbook_Open()
     ' Existing startup tasks
     Data_SharedValues.SheetCount = CountVisibleSheets()
-    Call UpdatePageNumbers
+    ' Call UpdatePageNumbers
     Call UpdateMergedRowNumbersWorkbook
     Helper_Database_StartRow.InitializeStartRow ActiveSheet
+
+    ' Route Ctrl+S through the save-lock handler instead of the default save.
+    Application.OnKey "^s", "HandleCtrlSSave"
+End Sub
+
+
+' =========================================================
+' Triggered when the workbook is closing.
+' =========================================================
+Private Sub Workbook_BeforeClose(Cancel As Boolean)
+    ' Application.OnKey is application-wide, not workbook-scoped;
+    ' restore the default Ctrl+S behavior so other open workbooks
+    ' are not affected after this one closes.
+    Application.OnKey "^s"
 End Sub
 
 
