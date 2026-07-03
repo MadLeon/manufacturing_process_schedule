@@ -19,6 +19,8 @@ Private Sub Workbook_Open()
 
     ' Route Ctrl+S through the save-lock handler instead of the default save.
     Application.OnKey "^s", "HandleCtrlSSave"
+    ' Route Ctrl+D through the unlock handler instead of the default fill-down.
+    Application.OnKey "^d", "HandleCtrlDUnlock"
 End Sub
 
 
@@ -27,9 +29,10 @@ End Sub
 ' =========================================================
 Private Sub Workbook_BeforeClose(Cancel As Boolean)
     ' Application.OnKey is application-wide, not workbook-scoped;
-    ' restore the default Ctrl+S behavior so other open workbooks
-    ' are not affected after this one closes.
+    ' restore the default Ctrl+S/Ctrl+D behavior so other open
+    ' workbooks are not affected after this one closes.
     Application.OnKey "^s"
+    Application.OnKey "^d"
 End Sub
 
 
@@ -55,7 +58,6 @@ Private Sub Workbook_SheetActivate(ByVal sh As Object)
     ' Re-initialize start row whenever a sheet is activated
     Helper_Database_InitStartRow.InitializeStartRow sh
 End Sub
-
 
 ' =========================================================
 ' Count the number of visible worksheets in the workbook,
@@ -103,3 +105,5 @@ CleanExit:
     ' Re-enable events after changes.
     Application.EnableEvents = True
 End Sub
+
+

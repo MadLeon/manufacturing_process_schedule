@@ -112,3 +112,16 @@ Public Sub LockAllSheets(pwd As String)
             AllowFiltering:=False, AllowUsingPivotTables:=False
     Next ws
 End Sub
+
+' Unprotects every visible worksheet that is currently protected, using
+' the given password. The hidden "Data" sheet is always skipped since
+' it is locked by default with a separate password.
+Public Sub UnlockAllSheets(pwd As String)
+    Dim ws As Worksheet
+
+    For Each ws In ThisWorkbook.Worksheets
+        If ws.Name <> "Data" And ws.Visible = xlSheetVisible And ws.ProtectContents Then
+            ws.Unprotect Password:=pwd
+        End If
+    Next ws
+End Sub

@@ -2,8 +2,9 @@ Option Explicit
 
 ' =========================================================
 ' Module: Handler_SaveLock
-' Purpose: Bound to Ctrl+S (see ThisWorkbook.Workbook_Open).
-'          Locks all sheets with a fixed password before saving,
+' Purpose: Bound to Ctrl+S and Ctrl+D (see ThisWorkbook.Workbook_Open).
+'          Ctrl+S locks all sheets with a fixed password before saving;
+'          Ctrl+D unlocks them again with that same password. Both are
 '          independent of the LaunchSignatureLock flow (no signing).
 ' =========================================================
 
@@ -28,4 +29,21 @@ LockFailed:
     MsgBox "Failed to lock sheets before saving: " & Err.Description & vbCrLf & _
         "Skipping lock and saving anyway.", vbExclamation, "Save Lock"
     Resume Next
+End Sub
+
+' Handles Ctrl+D: if this workbook is active and any visible sheet
+' is currently locked, unlocks all locked visible sheets (Data sheet
+' excepted) with the same fixed password. Does nothing if no visible
+' sheet is locked, or if a different workbook is active.
+Public Sub HandleCtrlDUnlock()
+    If Not (ActiveWorkbook Is ThisWorkbook) Then Exit Sub
+    If Not Function_SignatureLock.IsAnySheetLocked() Then Exit Sub
+
+    On Error GoTo UnlockFailed
+    Function_SignatureLock.UnlockAllSheets LOCK_PASSWORD
+    On Error GoTo 0
+    Exit Sub
+
+UnlockFailed:
+    MsgBox "Failed to unlock sheets: " & Err.Description, vbExclamation, "Unlock Sheets"
 End Sub
