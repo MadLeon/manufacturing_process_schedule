@@ -66,50 +66,59 @@ Private Function PickSignatureFile() As String
     End With
 End Function
 
-' Inserts the given image at cell H57 on every worksheet, sized
-' to a fixed 0.5-inch height with aspect ratio locked, white set
-' as the transparent color, then nudged down 9pt and right 2pt
-' from the cell's top-left corner.
+' Inserts the given image at cell H57 on every visible worksheet (the
+' hidden "Data" sheet is skipped, see IsAnySheetLocked), sized to a
+' fixed 0.5-inch height with aspect ratio locked, white set as the
+' transparent color, then nudged down 9pt and right 2pt from the
+' cell's top-left corner.
 Private Sub InsertSignatureToAllSheets(picPath As String)
     Dim ws As Worksheet
     Dim pic As Shape
     Dim anchor As Range
 
     For Each ws In ThisWorkbook.Worksheets
-        On Error Resume Next
-        ws.Shapes("SignaturePic").Delete
-        On Error GoTo 0
+        ' Skip the hidden "Data" sheet: it is already protected with its own
+        ' password, so inserting a shape into it raises a runtime error.
+        If ws.Visible = xlSheetVisible Then
+            On Error Resume Next
+            ws.Shapes("SignaturePic").Delete
+            On Error GoTo 0
 
-        Set anchor = ws.Range("H57")
-        Set pic = ws.Shapes.AddPicture(picPath, msoFalse, msoCTrue, anchor.Left, anchor.Top, -1, -1)
-        pic.Name = "SignaturePic"
-        pic.LockAspectRatio = msoTrue
-        pic.Height = Application.InchesToPoints(0.5)
+            Set anchor = ws.Range("H57")
+            Set pic = ws.Shapes.AddPicture(picPath, msoFalse, msoTrue, anchor.Left, anchor.Top, -1, -1)
+            pic.Name = "SignaturePic"
+            pic.LockAspectRatio = msoTrue
+            pic.Height = Application.InchesToPoints(0.5)
 
-        ' Set Transparent Color (white) so the signature background disappears
-        pic.PictureFormat.TransparencyColor = RGB(255, 255, 255)
-        pic.PictureFormat.TransparentBackground = msoTrue
+            ' Set Transparent Color (white) so the signature background disappears
+            pic.PictureFormat.TransparencyColor = RGB(255, 255, 255)
+            pic.PictureFormat.TransparentBackground = msoTrue
 
-        pic.Top = anchor.Top + 9
-        pic.Left = anchor.Left + 2
+            pic.Top = anchor.Top + 9
+            pic.Left = anchor.Left + 2
+        End If
     Next ws
 End Sub
 
-' Fully locks every worksheet with the given password: no cell
+' Fully locks every visible worksheet with the given password: no cell
 ' selection at all, and every native Protect Sheet option left unchecked.
 ' UserInterfaceOnly:=True keeps manual user edits blocked while still
 ' letting other macros (e.g. UpdatePageNumbers) write to cells in this session.
+' The hidden "Data" sheet is skipped since it is already protected with
+' its own separate password.
 Public Sub LockAllSheets(pwd As String)
     Dim ws As Worksheet
 
     For Each ws In ThisWorkbook.Worksheets
-        ws.EnableSelection = xlNoSelection
-        ws.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
-            UserInterfaceOnly:=True, _
-            AllowFormattingCells:=False, AllowFormattingColumns:=False, AllowFormattingRows:=False, _
-            AllowInsertingColumns:=False, AllowInsertingRows:=False, AllowInsertingHyperlinks:=False, _
-            AllowDeletingColumns:=False, AllowDeletingRows:=False, AllowSorting:=False, _
-            AllowFiltering:=False, AllowUsingPivotTables:=False
+        If ws.Visible = xlSheetVisible Then
+            ws.EnableSelection = xlNoSelection
+            ws.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+                UserInterfaceOnly:=True, _
+                AllowFormattingCells:=False, AllowFormattingColumns:=False, AllowFormattingRows:=False, _
+                AllowInsertingColumns:=False, AllowInsertingRows:=False, AllowInsertingHyperlinks:=False, _
+                AllowDeletingColumns:=False, AllowDeletingRows:=False, AllowSorting:=False, _
+                AllowFiltering:=False, AllowUsingPivotTables:=False
+        End If
     Next ws
 End Sub
 

@@ -25,6 +25,19 @@ End Sub
 
 
 ' =========================================================
+' Triggered before the workbook is saved (Ctrl+S, the Save button/ribbon,
+' or the explicit ActiveWorkbook.Save call in HandleCtrlSSave all raise
+' this event). Keeps this file's part_attachment row in record.db in sync;
+' see dir_signature/Function_DatabaseSync.bas. Skipped for Save As, since
+' ThisWorkbook.FullName still points at the old path at this point.
+' =========================================================
+Private Sub Workbook_BeforeSave(ByVal SaveAsUI As Boolean, Cancel As Boolean)
+    If SaveAsUI Then Exit Sub
+    Function_DatabaseSync.SyncDIRAttachment
+End Sub
+
+
+' =========================================================
 ' Triggered when the workbook is closing.
 ' =========================================================
 Private Sub Workbook_BeforeClose(Cancel As Boolean)

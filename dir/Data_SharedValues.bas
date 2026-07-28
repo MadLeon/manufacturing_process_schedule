@@ -23,4 +23,9 @@ Public TargetCells As Collection
 
 Public AlertToleranceShown As Boolean
 
-
+' Set by dir_signature/Handler_SaveLock.HandleCtrlSSave right before an explicit
+' Ctrl+S save; consumed (and reset) by dir_signature/Function_DatabaseSync as
+' soon as it's read, so it can never leak into a later, unrelated save. Tells
+' the DB sync that this save should mark the DIR's part_attachment as
+' 'completed' rather than leaving its status untouched.
+Public IsCtrlSSave As Boolean

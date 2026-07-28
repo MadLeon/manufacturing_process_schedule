@@ -20,6 +20,12 @@ Public Sub HandleCtrlSSave()
             Function_SignatureLock.LockAllSheets LOCK_PASSWORD
         End If
         On Error GoTo 0
+
+        ' Tell Function_DatabaseSync (see Workbook_BeforeSave) that this is an
+        ' explicit Ctrl+S, not just any save, so it marks the DIR attachment
+        ' completed instead of only refreshing it.
+        Data_SharedValues.IsCtrlSSave = True
+        Debug.Print "[HandleCtrlSSave] IsCtrlSSave set to True, about to call ActiveWorkbook.Save"
     End If
 
     ActiveWorkbook.Save
